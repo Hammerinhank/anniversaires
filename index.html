@@ -2,17 +2,506 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>anniversaires</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Anniversaires &amp; Fêtes</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f5f5f7; color:#1d1d1f; text-align:center; padding:60px 20px; }
-  h1 { color:#0071e3; }
-  p { color:#86868b; }
+  :root{
+    --fond:#0f1115; --carte:#1a1d24; --carte2:#20242c; --texte:#e8e9ec;
+    --att:#9aa0ab; --accent:#4f8cff; --vert:#00e676; --orange:#ff9500; --rouge:#ff3b30;
+    --bordure:#2c303a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--fond);color:var(--texte);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:14px;padding-bottom:60px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sous-titre{color:var(--att);font-size:13px;margin-bottom:14px;}
+  .badge-version{display:inline-block;background:var(--carte2);border:1px solid var(--bordure);color:var(--vert);font-weight:700;font-size:13px;padding:3px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;cursor:pointer;}
+  details{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;margin-bottom:12px;padding:0 12px;}
+  details summary{padding:10px 0;font-weight:600;cursor:pointer;font-size:14px;}
+  details[open] summary{border-bottom:1px solid var(--bordure);margin-bottom:10px;}
+  .champ{margin-bottom:10px;}
+  .champ label{display:block;font-size:12px;color:var(--att);margin-bottom:4px;}
+  input[type=text],input[type=email],input[type=password],input[type=number],select{
+    width:100%;padding:9px 10px;background:var(--carte2);border:1px solid var(--bordure);
+    border-radius:8px;color:var(--texte);font-size:14px;}
+  .ligne{display:flex;gap:8px;}
+  .ligne > *{flex:1;}
+  button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 14px;
+    font-size:14px;font-weight:600;cursor:pointer;}
+  button.secondaire{background:var(--carte2);border:1px solid var(--bordure);color:var(--texte);}
+  button.danger{background:var(--rouge);}
+  button:disabled{opacity:.5;}
+  .rangee-boutons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .msg{font-size:12px;padding:8px 10px;border-radius:8px;margin-top:8px;display:none;}
+  .msg.ok{display:block;background:#12301d;color:var(--vert);border:1px solid #1e4a2c;}
+  .msg.err{display:block;background:#3a1515;color:#ff8a80;border:1px solid #5a2323;}
+  .msg.info{display:block;background:#182338;color:#9cc0ff;border:1px solid #2a3f66;}
+  .section-titre{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--att);text-transform:uppercase;letter-spacing:.04em;}
+  .carte-evt{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+  .carte-evt.incomplet{border-color:var(--orange);}
+  .pastille{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .pastille.anniv{background:var(--accent);}
+  .pastille.fete{background:var(--vert);}
+  .infos-evt{flex:1;min-width:0;}
+  .nom-evt{font-weight:600;font-size:14px;}
+  .detail-evt{font-size:12px;color:var(--att);}
+  .jours-restants{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--carte2);white-space:nowrap;}
+  .jours-restants.demain{background:var(--rouge);color:#fff;}
+  .jours-restants.bientot{background:var(--orange);color:#1a1300;}
+  .boutons-evt{display:flex;gap:4px;}
+  .boutons-evt button{padding:6px 8px;font-size:12px;}
+  .vide{color:var(--att);font-size:13px;text-align:center;padding:20px;}
+  #panneau-historique{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;padding:20px;}
+  #panneau-historique .carte-hist{background:var(--carte);border:1px solid var(--bordure);border-radius:12px;max-width:480px;margin:40px auto;max-height:75vh;overflow-y:auto;padding:16px;}
+  #panneau-historique h3{margin-top:0;}
+  #panneau-historique ul{padding-left:18px;font-size:13px;color:var(--att);}
+  #panneau-historique li{margin-bottom:6px;}
+  .ferme-panneau{float:right;background:var(--carte2);border:1px solid var(--bordure);}
 </style>
 </head>
 <body>
-<h1>anniversaires</h1>
-<p>Nouvelle application créée avec Le Déployeur.</p>
-<p>Déploie ton code depuis l'étape 3 pour remplacer cette page.</p>
+
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V1</span></h1>
+<div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
+
+<details id="det-config">
+  <summary>⚙️ Réglages</summary>
+
+  <div class="champ">
+    <label>Adresse e-mail de destination des rappels</label>
+    <input type="email" id="champ-email" placeholder="toi@exemple.com">
+  </div>
+
+  <div class="section-titre" style="margin-top:16px;">Synchronisation GitHub</div>
+  <div class="champ"><label>Propriétaire (owner)</label><input type="text" id="champ-owner" placeholder="ex. Hammerinhank"></div>
+  <div class="champ"><label>Dépôt (repo)</label><input type="text" id="champ-repo" placeholder="ex. anniversaires"></div>
+  <div class="champ"><label>Branche</label><input type="text" id="champ-branche" value="main"></div>
+  <div class="champ"><label>Chemin du fichier JSON</label><input type="text" id="champ-fichier" value="data/anniversaires.json"></div>
+  <div class="champ"><label>Token GitHub (PAT, droits repo)</label><input type="password" id="champ-token" placeholder="ghp_..."></div>
+
+  <div class="rangee-boutons">
+    <button class="secondaire" id="btn-enregistrer-config">Enregistrer les réglages</button>
+    <button class="danger" id="btn-effacer-config">Effacer les identifiants</button>
+  </div>
+  <div class="rangee-boutons">
+    <button id="btn-push">⬆️ Envoyer vers GitHub</button>
+    <button class="secondaire" id="btn-pull">⬇️ Récupérer depuis GitHub</button>
+  </div>
+  <div class="msg" id="msg-sync"></div>
+</details>
+
+<details id="det-ajout">
+  <summary>➕ Ajouter un événement</summary>
+  <div class="champ"><label>Nom</label><input type="text" id="champ-nom"></div>
+  <div class="ligne">
+    <div class="champ"><label>Jour</label><input type="number" id="champ-jour" min="1" max="31"></div>
+    <div class="champ"><label>Mois</label>
+      <select id="champ-mois">
+        <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+        <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+        <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+        <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+      </select>
+    </div>
+    <div class="champ"><label>Année (optionnel)</label><input type="number" id="champ-annee" min="1900" max="2026"></div>
+  </div>
+  <div class="champ">
+    <label>Type</label>
+    <select id="champ-type"><option value="Anniversaire">Anniversaire</option><option value="Fête">Fête</option></select>
+  </div>
+  <button id="btn-ajouter">Ajouter</button>
+  <input type="hidden" id="champ-id-edition">
+  <div class="msg" id="msg-ajout"></div>
+</details>
+
+<div class="section-titre">Prochainement</div>
+<div id="liste-prochains"></div>
+
+<div class="section-titre">Dates incomplètes — à compléter</div>
+<div id="liste-incompletes"></div>
+
+<div class="section-titre">Tous les événements (<span id="compteur-total">0</span>)</div>
+<div id="liste-tous"></div>
+
+<div id="panneau-historique">
+  <div class="carte-hist">
+    <button class="ferme-panneau" id="btn-ferme-historique">✕</button>
+    <h3>Historique des versions</h3>
+    <ul id="liste-historique"></ul>
+  </div>
+</div>
+
+<script>
+const VERSION = "V1";
+const HISTORIQUE = [
+  { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." }
+];
+
+const CLE_EVENEMENTS = "anniversaires_evenements";
+const CLE_CONFIG = "anniversaires_config";
+const CLE_EMAIL = "anniversaires_email";
+
+const NOMS_MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+let evenements = [];
+
+// ---------- Persistance locale ----------
+function chargerLocal(){
+  try{
+    const brut = localStorage.getItem(CLE_EVENEMENTS);
+    evenements = brut ? JSON.parse(brut) : [];
+  }catch(e){ evenements = []; }
+
+  const cfg = document.getElementById.bind(document);
+  try{
+    const config = JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}");
+    document.getElementById("champ-owner").value = config.owner || "";
+    document.getElementById("champ-repo").value = config.repo || "";
+    document.getElementById("champ-branche").value = config.branche || "main";
+    document.getElementById("champ-fichier").value = config.fichier || "data/anniversaires.json";
+    document.getElementById("champ-token").value = config.token || "";
+  }catch(e){}
+
+  document.getElementById("champ-email").value = localStorage.getItem(CLE_EMAIL) || "";
+}
+
+function sauverEvenementsLocal(){
+  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+}
+
+function sauverEmailLocal(){
+  localStorage.setItem(CLE_EMAIL, document.getElementById("champ-email").value.trim());
+}
+
+// ---------- Rendu ----------
+function joursRestantsAvant(jour, mois){
+  const aujourdhui = new Date();
+  aujourdhui.setHours(0,0,0,0);
+  let annee = aujourdhui.getFullYear();
+  let prochaine = new Date(annee, mois - 1, jour);
+  prochaine.setHours(0,0,0,0);
+  if (prochaine < aujourdhui){
+    prochaine = new Date(annee + 1, mois - 1, jour);
+  }
+  return Math.round((prochaine - aujourdhui) / 86400000);
+}
+
+function libelleAge(evt){
+  if (!evt.annee) return "";
+  const j = joursRestantsAvant(evt.jour, evt.mois);
+  const aujourdhui = new Date();
+  const anneeProchaine = (j === 0 || (new Date()).getMonth()+1 === evt.mois && (new Date()).getDate() <= evt.jour)
+    ? aujourdhui.getFullYear() : aujourdhui.getFullYear() + (aujourdhui.getMonth()+1 > evt.mois || (aujourdhui.getMonth()+1 === evt.mois && aujourdhui.getDate() > evt.jour) ? 1 : 0);
+  const age = anneeProchaine - evt.annee;
+  return ` (${age} ans)`;
+}
+
+function carteEvenement(evt, avecJours){
+  const div = document.createElement("div");
+  div.className = "carte-evt" + (evt.incertain ? " incomplet" : "");
+
+  let detailDate;
+  let jours = null;
+  if (evt.jour){
+    jours = joursRestantsAvant(evt.jour, evt.mois);
+    detailDate = `${evt.jour} ${NOMS_MOIS[evt.mois-1]}` + libelleAge(evt);
+  } else {
+    detailDate = `${NOMS_MOIS[evt.mois-1] || "?"} ${evt.annee || ""} — jour inconnu`;
+  }
+
+  const pastilleClasse = evt.type === "Fête" ? "fete" : "anniv";
+
+  let badgeJours = "";
+  if (avecJours && jours !== null){
+    let cls = "jours-restants";
+    if (jours === 0) cls += " demain-x"; // n'est jamais 0 côté "veille", gardé pour clarté
+    if (jours === 1) cls += " demain";
+    else if (jours <= 7) cls += " bientot";
+    badgeJours = `<span class="${cls}">${jours === 0 ? "aujourd'hui" : jours === 1 ? "demain" : jours + " j"}</span>`;
+  }
+
+  div.innerHTML = `
+    <span class="pastille ${pastilleClasse}"></span>
+    <div class="infos-evt">
+      <div class="nom-evt">${escHtml(evt.nom)} <span style="font-weight:400;color:var(--att);font-size:12px;">· ${evt.type}</span></div>
+      <div class="detail-evt">${detailDate}</div>
+    </div>
+    ${badgeJours}
+    <div class="boutons-evt">
+      <button class="secondaire" data-action="editer" data-id="${evt.id}">✏️</button>
+      <button class="danger" data-action="supprimer" data-id="${evt.id}">🗑️</button>
+    </div>
+  `;
+  return div;
+}
+
+function escHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function rafraichir(){
+  const conteneurProchains = document.getElementById("liste-prochains");
+  const conteneurIncomplets = document.getElementById("liste-incompletes");
+  const conteneurTous = document.getElementById("liste-tous");
+
+  const complets = evenements.filter(e => e.jour);
+  const incomplets = evenements.filter(e => !e.jour);
+
+  const prochains = [...complets].sort((a,b) => joursRestantsAvant(a.jour,a.mois) - joursRestantsAvant(b.jour,b.mois)).slice(0, 8);
+
+  conteneurProchains.innerHTML = "";
+  if (prochains.length === 0){
+    conteneurProchains.innerHTML = '<div class="vide">Aucun événement</div>';
+  } else {
+    prochains.forEach(e => conteneurProchains.appendChild(carteEvenement(e, true)));
+  }
+
+  conteneurIncomplets.innerHTML = "";
+  const detIncomplet = document.getElementById("liste-incompletes").parentElement;
+  if (incomplets.length === 0){
+    conteneurIncomplets.parentElement.querySelector; // no-op
+    conteneurIncomplets.innerHTML = '<div class="vide">Aucune — tout est complet</div>';
+  } else {
+    incomplets.forEach(e => conteneurIncomplets.appendChild(carteEvenement(e, false)));
+  }
+
+  conteneurTous.innerHTML = "";
+  const tousTries = [...complets].sort((a,b) => (a.mois - b.mois) || (a.jour - b.jour)).concat(incomplets);
+  tousTries.forEach(e => conteneurTous.appendChild(carteEvenement(e, false)));
+  document.getElementById("compteur-total").textContent = evenements.length;
+}
+
+// ---------- Ajout / édition / suppression ----------
+function genererId(){
+  return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+function afficherMsg(id, texte, type){
+  const el = document.getElementById(id);
+  el.textContent = texte;
+  el.className = "msg " + type;
+  el.style.display = "block";
+  setTimeout(() => { el.style.display = "none"; }, 4000);
+}
+
+document.getElementById("btn-ajouter").addEventListener("click", () => {
+  const nom = document.getElementById("champ-nom").value.trim();
+  const jour = parseInt(document.getElementById("champ-jour").value, 10) || null;
+  const mois = parseInt(document.getElementById("champ-mois").value, 10);
+  const anneeVal = document.getElementById("champ-annee").value;
+  const annee = anneeVal ? parseInt(anneeVal, 10) : null;
+  const type = document.getElementById("champ-type").value;
+  const idEdition = document.getElementById("champ-id-edition").value;
+
+  if (!nom){
+    afficherMsg("msg-ajout", "Le nom est obligatoire.", "err");
+    return;
+  }
+  if (jour && (jour < 1 || jour > 31)){
+    afficherMsg("msg-ajout", "Jour invalide.", "err");
+    return;
+  }
+
+  if (idEdition){
+    const evt = evenements.find(e => e.id === idEdition);
+    if (evt){
+      evt.nom = nom; evt.jour = jour; evt.mois = mois; evt.annee = annee; evt.type = type;
+      evt.incertain = !jour;
+    }
+    document.getElementById("champ-id-edition").value = "";
+    document.getElementById("btn-ajouter").textContent = "Ajouter";
+    afficherMsg("msg-ajout", "Événement modifié.", "ok");
+  } else {
+    evenements.push({ id: genererId(), nom, jour, mois, annee, type, incertain: !jour });
+    afficherMsg("msg-ajout", "Événement ajouté.", "ok");
+  }
+
+  document.getElementById("champ-nom").value = "";
+  document.getElementById("champ-jour").value = "";
+  document.getElementById("champ-annee").value = "";
+
+  sauverEvenementsLocal();
+  rafraichir();
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const evt = evenements.find(ev => ev.id === id);
+  if (!evt) return;
+
+  if (btn.dataset.action === "supprimer"){
+    if (!confirm(`Supprimer « ${evt.nom} » (${evt.type}) ?`)) return;
+    evenements = evenements.filter(ev => ev.id !== id);
+    sauverEvenementsLocal();
+    rafraichir();
+  }
+
+  if (btn.dataset.action === "editer"){
+    document.getElementById("det-ajout").open = true;
+    document.getElementById("champ-nom").value = evt.nom;
+    document.getElementById("champ-jour").value = evt.jour || "";
+    document.getElementById("champ-mois").value = evt.mois;
+    document.getElementById("champ-annee").value = evt.annee || "";
+    document.getElementById("champ-type").value = evt.type;
+    document.getElementById("champ-id-edition").value = evt.id;
+    document.getElementById("btn-ajouter").textContent = "Enregistrer la modification";
+    window.scrollTo({top: document.getElementById("det-ajout").offsetTop - 10, behavior:"smooth"});
+  }
+});
+
+document.getElementById("champ-email").addEventListener("change", sauverEmailLocal);
+
+// ---------- Réglages GitHub ----------
+document.getElementById("btn-enregistrer-config").addEventListener("click", () => {
+  const config = {
+    owner: document.getElementById("champ-owner").value.trim(),
+    repo: document.getElementById("champ-repo").value.trim(),
+    branche: document.getElementById("champ-branche").value.trim() || "main",
+    fichier: document.getElementById("champ-fichier").value.trim() || "data/anniversaires.json",
+    token: document.getElementById("champ-token").value.trim()
+  };
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-sync", "Owner, dépôt et token sont requis pour synchroniser.", "err");
+    return;
+  }
+  localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
+  sauverEmailLocal();
+  afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
+});
+
+document.getElementById("btn-effacer-config").addEventListener("click", () => {
+  if (!confirm("Effacer les identifiants GitHub enregistrés localement ?")) return;
+  localStorage.removeItem(CLE_CONFIG);
+  document.getElementById("champ-owner").value = "";
+  document.getElementById("champ-repo").value = "";
+  document.getElementById("champ-token").value = "";
+  afficherMsg("msg-sync", "Identifiants effacés.", "ok");
+});
+
+function lireConfig(){
+  try{ return JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}"); }
+  catch(e){ return {}; }
+}
+
+async function githubApi(url, options){
+  const config = lireConfig();
+  const opts = options || {};
+  opts.headers = Object.assign({
+    "Authorization": "Bearer " + config.token,
+    "Accept": "application/vnd.github+json"
+  }, opts.headers || {});
+  const rep = await fetch(url, opts);
+  if (!rep.ok){
+    const texte = await rep.text().catch(() => "");
+    throw new Error(`${rep.status} ${rep.statusText} — ${texte.slice(0,200)}`);
+  }
+  return rep.status === 204 ? null : rep.json();
+}
+
+function b64EncodeUtf8(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64DecodeUtf8(str){
+  return decodeURIComponent(escape(atob(str)));
+}
+
+document.getElementById("btn-push").addEventListener("click", async () => {
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
+    return;
+  }
+  const btn = document.getElementById("btn-push");
+  btn.disabled = true;
+  try{
+    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
+    let sha = null;
+    try{
+      const existant = await githubApi(url);
+      sha = existant.sha;
+    }catch(e){ /* fichier inexistant : création */ }
+
+    const payload = {
+      destinataire: document.getElementById("champ-email").value.trim(),
+      maj: new Date().toISOString(),
+      evenements
+    };
+    const body = {
+      message: "Mise à jour anniversaires.json depuis l'app",
+      content: b64EncodeUtf8(JSON.stringify(payload, null, 2)),
+      branch: config.branche
+    };
+    if (sha) body.sha = sha;
+
+    await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
+  }catch(e){
+    afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("btn-pull").addEventListener("click", async () => {
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
+    return;
+  }
+  if (!confirm("Remplacer la liste locale par la version de GitHub ?")) return;
+  const btn = document.getElementById("btn-pull");
+  btn.disabled = true;
+  try{
+    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
+    const data = await githubApi(url);
+    const contenu = JSON.parse(b64DecodeUtf8(data.content));
+    evenements = contenu.evenements || [];
+    if (contenu.destinataire) document.getElementById("champ-email").value = contenu.destinataire;
+    sauverEvenementsLocal();
+    sauverEmailLocal();
+    rafraichir();
+    afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
+  }catch(e){
+    afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------- Historique de version ----------
+document.getElementById("badge-version").addEventListener("click", () => {
+  const liste = document.getElementById("liste-historique");
+  liste.innerHTML = HISTORIQUE.map(h => `<li><strong>${h.v}</strong> — ${escHtml(h.note)}</li>`).join("");
+  document.getElementById("panneau-historique").style.display = "block";
+});
+document.getElementById("btn-ferme-historique").addEventListener("click", () => {
+  document.getElementById("panneau-historique").style.display = "none";
+});
+
+// ---------- Import initial (si aucune donnée locale) ----------
+async function importerDonneesInitiales(){
+  if (evenements.length > 0) return;
+  try{
+    const rep = await fetch("data/anniversaires.json");
+    if (!rep.ok) return;
+    const data = await rep.json();
+    evenements = data.evenements || [];
+    if (data.destinataire) document.getElementById("champ-email").value = data.destinataire;
+    sauverEvenementsLocal();
+  }catch(e){ /* pas de fichier local co-hébergé : pas grave, liste vide */ }
+}
+
+// ---------- Démarrage ----------
+(async function demarrer(){
+  chargerLocal();
+  await importerDonneesInitiales();
+  rafraichir();
+})();
+</script>
 </body>
 </html>
