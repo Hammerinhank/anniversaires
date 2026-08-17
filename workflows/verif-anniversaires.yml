@@ -1,0 +1,25 @@
+name: Vérification anniversaires
+
+on:
+  schedule:
+    # 06:00 UTC ≈ 07:00/08:00 heure de Paris selon l'heure d'été/hiver
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}   # permet un lancement manuel de test depuis l'onglet Actions
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Envoyer le rappel si nécessaire
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/envoyer_rappels.py
