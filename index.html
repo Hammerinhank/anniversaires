@@ -59,8 +59,9 @@
 </style>
 </head>
 <body>
+<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.js"></script>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V2</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V3</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -94,6 +95,15 @@
     <button id="btn-test-e2e">🧪 Lancer le test</button>
   </div>
   <div id="statut-test" class="msg info" style="display:none;"></div>
+
+  <div class="section-titre" style="margin-top:16px;">Identifiants Gmail (secrets GitHub Actions)</div>
+  <div class="msg info" style="display:block;">Stockés uniquement dans ce navigateur (localStorage). Le bouton ci-dessous les chiffre et les envoie directement comme secrets du dépôt — plus besoin de passer par l'interface GitHub.</div>
+  <div class="champ"><label>Adresse Gmail expéditrice</label><input type="email" id="champ-gmail-user" placeholder="toi@gmail.com"></div>
+  <div class="champ"><label>Mot de passe d'application Gmail (16 caractères)</label><input type="password" id="champ-gmail-app-password" placeholder="xxxx xxxx xxxx xxxx"></div>
+  <div class="rangee-boutons">
+    <button id="btn-maj-secrets">🔐 Mettre à jour les secrets sur GitHub</button>
+  </div>
+  <div class="msg" id="msg-secrets"></div>
 </details>
 
 <details id="det-ajout">
@@ -138,15 +148,17 @@
 </div>
 
 <script>
-const VERSION = "V2";
+const VERSION = "V3";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
-  { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." }
+  { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
+  { v: "V3", note: "Champs Gmail (adresse + mot de passe d'application) persistants en local, avec bouton pour chiffrer et pousser directement les secrets GMAIL_USER / GMAIL_APP_PASSWORD sur GitHub." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
 const CLE_CONFIG = "anniversaires_config";
 const CLE_EMAIL = "anniversaires_email";
+const CLE_GMAIL = "anniversaires_gmail";
 
 const NOMS_MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
@@ -170,6 +182,19 @@ function chargerLocal(){
   }catch(e){}
 
   document.getElementById("champ-email").value = localStorage.getItem(CLE_EMAIL) || "";
+
+  try{
+    const gmail = JSON.parse(localStorage.getItem(CLE_GMAIL) || "{}");
+    document.getElementById("champ-gmail-user").value = gmail.user || "";
+    document.getElementById("champ-gmail-app-password").value = gmail.appPassword || "";
+  }catch(e){}
+}
+
+function sauverGmailLocal(){
+  localStorage.setItem(CLE_GMAIL, JSON.stringify({
+    user: document.getElementById("champ-gmail-user").value.trim(),
+    appPassword: document.getElementById("champ-gmail-app-password").value.trim()
+  }));
 }
 
 function sauverEvenementsLocal(){
@@ -359,6 +384,8 @@ document.addEventListener("click", (e) => {
 });
 
 document.getElementById("champ-email").addEventListener("change", sauverEmailLocal);
+document.getElementById("champ-gmail-user").addEventListener("change", sauverGmailLocal);
+document.getElementById("champ-gmail-app-password").addEventListener("change", sauverGmailLocal);
 
 // ---------- Réglages GitHub ----------
 document.getElementById("btn-enregistrer-config").addEventListener("click", () => {
@@ -476,6 +503,54 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
     afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
   }catch(e){
     afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------- Mise à jour des secrets GitHub Actions ----------
+async function chiffrerPourGitHub(cleGitHubBase64, texteClair){
+  await sodium.ready;
+  const cleBin = sodium.from_base64(cleGitHubBase64, sodium.base64_variants.ORIGINAL);
+  const secretBin = sodium.from_string(texteClair);
+  const chiffre = sodium.crypto_box_seal(secretBin, cleBin);
+  return sodium.to_base64(chiffre, sodium.base64_variants.ORIGINAL);
+}
+
+async function poserSecretGitHub(config, nomSecret, valeur, cleInfo){
+  const encryptedValue = await chiffrerPourGitHub(cleInfo.key, valeur);
+  await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/${nomSecret}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ encrypted_value: encryptedValue, key_id: cleInfo.key_id })
+  });
+}
+
+document.getElementById("btn-maj-secrets").addEventListener("click", async () => {
+  const config = lireConfig();
+  const gmailUser = document.getElementById("champ-gmail-user").value.trim();
+  const gmailPass = document.getElementById("champ-gmail-app-password").value.trim();
+
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-secrets", "Renseigne et enregistre d'abord owner/repo/token dans les réglages.", "err");
+    return;
+  }
+  if (!gmailUser || !gmailPass){
+    afficherMsg("msg-secrets", "Renseigne l'adresse Gmail et le mot de passe d'application.", "err");
+    return;
+  }
+
+  const btn = document.getElementById("btn-maj-secrets");
+  btn.disabled = true;
+  sauverGmailLocal();
+
+  try{
+    const cleInfo = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/public-key`);
+    await poserSecretGitHub(config, "GMAIL_USER", gmailUser, cleInfo);
+    await poserSecretGitHub(config, "GMAIL_APP_PASSWORD", gmailPass, cleInfo);
+    afficherMsg("msg-secrets", "✅ Secrets GMAIL_USER et GMAIL_APP_PASSWORD mis à jour sur GitHub.", "ok");
+  }catch(e){
+    afficherMsg("msg-secrets", "❌ Échec : " + e.message + " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique).", "err");
   }finally{
     btn.disabled = false;
   }
