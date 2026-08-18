@@ -60,7 +60,7 @@
 </head>
 <body>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V1</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V2</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -87,6 +87,13 @@
     <button class="secondaire" id="btn-pull">⬇️ Récupérer depuis GitHub</button>
   </div>
   <div class="msg" id="msg-sync"></div>
+
+  <div class="section-titre" style="margin-top:16px;">Test de bout en bout</div>
+  <div class="msg info" style="display:block;">Déclenche le workflow GitHub Actions réel et envoie un vrai e-mail de test (préfixé [TEST]) basé sur le prochain événement du calendrier. Nécessite que les réglages ci-dessus soient enregistrés.</div>
+  <div class="rangee-boutons">
+    <button id="btn-test-e2e">🧪 Lancer le test</button>
+  </div>
+  <div id="statut-test" class="msg info" style="display:none;"></div>
 </details>
 
 <details id="det-ajout">
@@ -131,9 +138,10 @@
 </div>
 
 <script>
-const VERSION = "V1";
+const VERSION = "V2";
 const HISTORIQUE = [
-  { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." }
+  { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
+  { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
@@ -468,6 +476,92 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
     afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
   }catch(e){
     afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------- Test de bout en bout ----------
+const NOM_FICHIER_WORKFLOW = "verif-anniversaires.yml";
+
+function afficherStatutTest(texte, classe){
+  const el = document.getElementById("statut-test");
+  el.style.display = "block";
+  el.className = "msg " + classe;
+  el.innerHTML = texte;
+}
+
+function attendre(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function trouverRunDeclenche(config, aprèsISO){
+  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/actions/workflows/${NOM_FICHIER_WORKFLOW}/runs?event=workflow_dispatch&per_page=5`;
+  const data = await githubApi(url);
+  const seuil = new Date(aprèsISO).getTime() - 5000; // marge de 5 s pour les décalages d'horloge
+  const runs = (data.workflow_runs || []).filter(r => new Date(r.created_at).getTime() >= seuil);
+  if (runs.length === 0) return null;
+  runs.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  return runs[0];
+}
+
+document.getElementById("btn-test-e2e").addEventListener("click", async () => {
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    afficherStatutTest("⚠️ Renseigne et enregistre d'abord owner/repo/token dans les réglages.", "err");
+    return;
+  }
+
+  const btn = document.getElementById("btn-test-e2e");
+  btn.disabled = true;
+  afficherStatutTest("⏳ Déclenchement du workflow…", "info");
+
+  try{
+    const avantDeclenchement = new Date().toISOString();
+
+    await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/workflows/${NOM_FICHIER_WORKFLOW}/dispatches`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: config.branche, inputs: { forcer_test: "true" } })
+    });
+
+    afficherStatutTest("⏳ Workflow déclenché, en attente de son démarrage sur GitHub…", "info");
+
+    // Étape 1 : retrouver le run correspondant à notre déclenchement
+    let run = null;
+    for (let tentative = 0; tentative < 20 && !run; tentative++){
+      await attendre(3000);
+      run = await trouverRunDeclenche(config, avantDeclenchement);
+    }
+    if (!run){
+      afficherStatutTest("❌ Le run n'est pas apparu après 60 s. Vérifie manuellement l'onglet Actions du dépôt.", "err");
+      return;
+    }
+
+    afficherStatutTest(`⏳ Run détecté (#${run.run_number}), exécution en cours…`, "info");
+
+    // Étape 2 : sonder jusqu'à complétion
+    let statutFinal = null;
+    for (let tentative = 0; tentative < 40; tentative++){
+      await attendre(3000);
+      const detail = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/runs/${run.id}`);
+      if (detail.status === "completed"){
+        statutFinal = detail;
+        break;
+      }
+    }
+
+    if (!statutFinal){
+      afficherStatutTest(`⏳ Toujours en cours après 2 min. <a href="${run.html_url}" target="_blank" style="color:#9cc0ff;">Voir sur GitHub</a>`, "info");
+      return;
+    }
+
+    if (statutFinal.conclusion === "success"){
+      afficherStatutTest(`✅ Test réussi ! Vérifie ta boîte mail (et les spams). <a href="${statutFinal.html_url}" target="_blank" style="color:#9cc0ff;">Voir les logs</a>`, "ok");
+    } else {
+      afficherStatutTest(`❌ Le workflow a échoué (${statutFinal.conclusion}). <a href="${statutFinal.html_url}" target="_blank" style="color:#ff8a80;">Voir les logs sur GitHub</a> pour le détail (souvent : secrets GMAIL_USER / GMAIL_APP_PASSWORD).`, "err");
+    }
+
+  }catch(e){
+    afficherStatutTest("❌ Erreur : " + e.message, "err");
   }finally{
     btn.disabled = false;
   }
