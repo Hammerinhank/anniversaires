@@ -61,7 +61,7 @@
 <body>
 <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.js"></script>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V4</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V5</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -99,7 +99,7 @@
   <div class="section-titre" style="margin-top:16px;">Identifiants Gmail (secrets GitHub Actions)</div>
   <div class="msg info" style="display:block;">Stockés uniquement dans ce navigateur (localStorage). Le bouton ci-dessous les chiffre et les envoie directement comme secrets du dépôt — plus besoin de passer par l'interface GitHub.</div>
   <div class="champ"><label>Adresse Gmail expéditrice</label><input type="email" id="champ-gmail-user" placeholder="toi@gmail.com"></div>
-  <div class="champ"><label>Mot de passe d'application Gmail (16 caractères)</label><input type="password" id="champ-gmail-app-password" placeholder="xxxx xxxx xxxx xxxx"></div>
+  <div class="champ"><label>Mot de passe d'application Gmail (16 caractères)</label><input type="text" id="champ-gmail-app-password" placeholder="xxxx xxxx xxxx xxxx" style="font-family:monospace;" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
   <div class="rangee-boutons">
     <button id="btn-maj-secrets">🔐 Mettre à jour les secrets sur GitHub</button>
   </div>
@@ -152,12 +152,13 @@
 </div>
 
 <script>
-const VERSION = "V4";
+const VERSION = "V5";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
   { v: "V3", note: "Champs Gmail (adresse + mot de passe d'application) persistants en local, avec bouton pour chiffrer et pousser directement les secrets GMAIL_USER / GMAIL_APP_PASSWORD sur GitHub." },
-  { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." }
+  { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." },
+  { v: "V5", note: "Le mot de passe d'application Gmail s'affiche désormais en clair (police à chasse fixe) plutôt que masqué, autocorrection/autocapitalisation désactivées sur ce champ." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
