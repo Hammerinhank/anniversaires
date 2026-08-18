@@ -10,6 +10,10 @@ on:
         description: "Envoyer un e-mail de test immédiat (prochain événement réel, préfixé [TEST])"
         type: boolean
         default: false
+      diagnostiquer_gmail:
+        description: "Diagnostiquer GMAIL_USER / GMAIL_APP_PASSWORD sans envoyer d'e-mail"
+        type: boolean
+        default: false
 
 jobs:
   verifier:
@@ -28,4 +32,5 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           FORCER_TEST: ${{ github.event.inputs.forcer_test || 'false' }}
+          DIAGNOSTIQUER_GMAIL: ${{ github.event.inputs.diagnostiquer_gmail || 'false' }}
         run: python scripts/envoyer_rappels.py
