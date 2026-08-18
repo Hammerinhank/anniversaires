@@ -4,7 +4,12 @@ on:
   schedule:
     # 06:00 UTC ≈ 07:00/08:00 heure de Paris selon l'heure d'été/hiver
     - cron: "0 6 * * *"
-  workflow_dispatch: {}   # permet un lancement manuel de test depuis l'onglet Actions
+  workflow_dispatch:
+    inputs:
+      forcer_test:
+        description: "Envoyer un e-mail de test immédiat (prochain événement réel, préfixé [TEST])"
+        type: boolean
+        default: false
 
 jobs:
   verifier:
@@ -22,4 +27,5 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          FORCER_TEST: ${{ github.event.inputs.forcer_test || 'false' }}
         run: python scripts/envoyer_rappels.py
