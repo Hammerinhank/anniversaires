@@ -60,7 +60,7 @@
 </head>
 <body>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V7</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V8</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -151,7 +151,7 @@
 </div>
 
 <script>
-const VERSION = "V7";
+const VERSION = "V8";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
@@ -159,7 +159,8 @@ const HISTORIQUE = [
   { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." },
   { v: "V5", note: "Le mot de passe d'application Gmail s'affiche désormais en clair (police à chasse fixe) plutôt que masqué, autocorrection/autocapitalisation désactivées sur ce champ." },
   { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." },
-  { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite, au lieu d'un chargement statique pouvant provoquer « sodium is not defined » si le clic précédait la fin du chargement." }
+  { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite, au lieu d'un chargement statique pouvant provoquer « sodium is not defined » si le clic précédait la fin du chargement." },
+  { v: "V8", note: "Chargement de la librairie de chiffrement avec 3 CDN de secours essayés successivement (cdnjs, jsdelivr, unpkg) ; une nouvelle tentative relance vraiment le chargement au lieu de réutiliser un échec précédent." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
@@ -522,25 +523,45 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
 // ---------- Mise à jour des secrets GitHub Actions ----------
 let promesseSodium = null;
 
-function chargerSodium(){
-  if (promesseSodium) return promesseSodium;
-  promesseSodium = new Promise((resolve, reject) => {
-    if (window.sodium && window.sodium.ready){
-      window.sodium.ready.then(() => resolve(window.sodium));
-      return;
-    }
+const CDN_SODIUM = [
+  "https://cdnjs.cloudflare.com/ajax/libs/libsodium-wrappers/0.7.11/sodium.js",
+  "https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/browsers/sodium.js",
+  "https://unpkg.com/libsodium-wrappers@0.7.15/dist/browsers/sodium.js"
+];
+
+function chargerScript(url){
+  return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/browsers/sodium.js";
-    script.onload = () => {
-      if (window.sodium && window.sodium.ready){
-        window.sodium.ready.then(() => resolve(window.sodium));
-      } else {
-        reject(new Error("La librairie de chiffrement s'est chargée mais semble incomplète."));
-      }
-    };
-    script.onerror = () => reject(new Error("Impossible de charger la librairie de chiffrement depuis cdn.jsdelivr.net (réseau bloqué, hors ligne, ou bloqueur de contenu actif)."));
+    script.src = url;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`échec sur ${new URL(url).hostname}`));
     document.head.appendChild(script);
   });
+}
+
+function chargerSodium(){
+  if (promesseSodium) return promesseSodium;
+  promesseSodium = (async () => {
+    if (window.sodium && window.sodium.ready){
+      await window.sodium.ready;
+      return window.sodium;
+    }
+    const echecs = [];
+    for (const url of CDN_SODIUM){
+      try{
+        await chargerScript(url);
+        if (window.sodium && window.sodium.ready){
+          await window.sodium.ready;
+          return window.sodium;
+        }
+        echecs.push(`${new URL(url).hostname} : chargé mais incomplet`);
+      }catch(e){
+        echecs.push(e.message);
+      }
+    }
+    promesseSodium = null; // pour permettre une nouvelle tentative au clic suivant
+    throw new Error("Impossible de charger la librairie de chiffrement depuis aucune des sources testées (" + echecs.join(" ; ") + "). Vérifie ta connexion, ou désactive temporairement un bloqueur de contenu / VPN sur cet appareil.");
+  })();
   return promesseSodium;
 }
 
