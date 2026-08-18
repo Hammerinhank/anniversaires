@@ -44,6 +44,24 @@ def evenements_de_demain(evenements, demain):
     return resultats
 
 
+def prochaine_occurrence(evt, aujourdhui):
+    """Prochaine date (>= aujourd'hui) à laquelle tombe cet événement, ignorant l'année."""
+    annee = aujourdhui.year
+    candidate = date(annee, evt["mois"], evt["jour"])
+    if candidate < aujourdhui:
+        candidate = date(annee + 1, evt["mois"], evt["jour"])
+    return candidate
+
+
+def trouver_prochain_evenement(evenements, aujourdhui):
+    """Utilisé en mode test : l'événement réel le plus proche dans le temps (jour connu requis)."""
+    candidats = [(prochaine_occurrence(e, aujourdhui), e) for e in evenements if e.get("jour")]
+    if not candidats:
+        return None
+    candidats.sort(key=lambda c: c[0])
+    return candidats[0]  # (date_occurrence, evenement)
+
+
 def construire_message(evenements_matches, demain):
     lignes = []
     for evt in evenements_matches:
@@ -74,14 +92,32 @@ def envoyer_email(destinataire, sujet, corps):
 
 
 def main():
-    demain = date.today() + timedelta(days=1)
     donnees = charger_donnees()
-
     destinataire = donnees.get("destinataire") or os.environ.get("DESTINATAIRE_SECOURS", "")
+    forcer_test = os.environ.get("FORCER_TEST", "false").strip().lower() == "true"
+
     if not destinataire:
         print("Aucun destinataire configuré (ni dans le JSON, ni en secours). Abandon.")
-        sys.exit(0)
+        sys.exit(1 if forcer_test else 0)  # un test doit remonter en échec ; le cron quotidien reste silencieux
 
+    if forcer_test:
+        aujourdhui = date.today()
+        trouve = trouver_prochain_evenement(donnees.get("evenements", []), aujourdhui)
+        if not trouve:
+            print("Mode test : aucun événement avec une date connue dans le fichier. Abandon.")
+            sys.exit(1)
+        date_occurrence, evt = trouve
+        sujet, corps = construire_message([evt], date_occurrence)
+        sujet = "[TEST] " + sujet
+        corps = ("Ceci est un e-mail de TEST déclenché manuellement depuis l'app "
+                  "(pas un vrai rappel).\nIl emprunte le prochain événement réel du "
+                  "calendrier pour vérifier toute la chaîne : lecture du fichier, "
+                  "mise en forme, envoi Gmail.\n\n") + corps
+        envoyer_email(destinataire, sujet, corps)
+        print(f"[TEST] E-mail envoyé à {destinataire} (événement emprunté : {evt['nom']}).")
+        return
+
+    demain = date.today() + timedelta(days=1)
     matches = evenements_de_demain(donnees.get("evenements", []), demain)
     if not matches:
         print(f"Rien à signaler pour le {demain.isoformat()}.")
