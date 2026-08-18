@@ -59,9 +59,8 @@
 </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.js"></script>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V6</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V7</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -152,14 +151,15 @@
 </div>
 
 <script>
-const VERSION = "V6";
+const VERSION = "V7";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
   { v: "V3", note: "Champs Gmail (adresse + mot de passe d'application) persistants en local, avec bouton pour chiffrer et pousser directement les secrets GMAIL_USER / GMAIL_APP_PASSWORD sur GitHub." },
   { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." },
   { v: "V5", note: "Le mot de passe d'application Gmail s'affiche désormais en clair (police à chasse fixe) plutôt que masqué, autocorrection/autocapitalisation désactivées sur ce champ." },
-  { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." }
+  { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." },
+  { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite, au lieu d'un chargement statique pouvant provoquer « sodium is not defined » si le clic précédait la fin du chargement." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
@@ -520,8 +520,32 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
 });
 
 // ---------- Mise à jour des secrets GitHub Actions ----------
+let promesseSodium = null;
+
+function chargerSodium(){
+  if (promesseSodium) return promesseSodium;
+  promesseSodium = new Promise((resolve, reject) => {
+    if (window.sodium && window.sodium.ready){
+      window.sodium.ready.then(() => resolve(window.sodium));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/dist/browsers/sodium.js";
+    script.onload = () => {
+      if (window.sodium && window.sodium.ready){
+        window.sodium.ready.then(() => resolve(window.sodium));
+      } else {
+        reject(new Error("La librairie de chiffrement s'est chargée mais semble incomplète."));
+      }
+    };
+    script.onerror = () => reject(new Error("Impossible de charger la librairie de chiffrement depuis cdn.jsdelivr.net (réseau bloqué, hors ligne, ou bloqueur de contenu actif)."));
+    document.head.appendChild(script);
+  });
+  return promesseSodium;
+}
+
 async function chiffrerPourGitHub(cleGitHubBase64, texteClair){
-  await sodium.ready;
+  const sodium = await chargerSodium();
   const cleBin = sodium.from_base64(cleGitHubBase64, sodium.base64_variants.ORIGINAL);
   const secretBin = sodium.from_string(texteClair);
   const chiffre = sodium.crypto_box_seal(secretBin, cleBin);
@@ -554,14 +578,20 @@ document.getElementById("btn-maj-secrets").addEventListener("click", async () =>
   const btn = document.getElementById("btn-maj-secrets");
   btn.disabled = true;
   sauverGmailLocal();
+  afficherMsg("msg-secrets", "⏳ Chargement de la librairie de chiffrement…", "info");
 
   try{
+    await chargerSodium();
+    afficherMsg("msg-secrets", "⏳ Envoi des secrets chiffrés vers GitHub…", "info");
     const cleInfo = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/public-key`);
     await poserSecretGitHub(config, "GMAIL_USER", gmailUser, cleInfo);
     await poserSecretGitHub(config, "GMAIL_APP_PASSWORD", gmailPass, cleInfo);
     afficherMsg("msg-secrets", "✅ Secrets GMAIL_USER et GMAIL_APP_PASSWORD mis à jour sur GitHub.", "ok");
   }catch(e){
-    afficherMsg("msg-secrets", "❌ Échec : " + e.message + " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique).", "err");
+    const indice = e.message.includes("chiffrement")
+      ? " Réessaie dans quelques secondes (problème réseau probable)."
+      : " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique, ou permission « Secrets » en Read and write pour un token fin).";
+    afficherMsg("msg-secrets", "❌ Échec : " + e.message + indice, "err");
   }finally{
     btn.disabled = false;
   }
