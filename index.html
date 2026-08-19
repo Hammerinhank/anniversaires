@@ -15,6 +15,12 @@
   h1{font-size:20px;margin:0 0 4px;}
   .sous-titre{color:var(--att);font-size:13px;margin-bottom:14px;}
   .badge-version{display:inline-block;background:var(--carte2);border:1px solid var(--bordure);color:var(--vert);font-weight:700;font-size:13px;padding:3px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;cursor:pointer;}
+  .etat-sync{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;background:var(--carte2);border:1px solid var(--bordure);color:var(--att);white-space:nowrap;}
+  .etat-sync.ok{color:var(--vert);border-color:#1e4a2c;}
+  .etat-sync.erreur{color:#ff8a80;border-color:#5a2323;}
+  .etat-sync.en-cours{color:var(--orange);border-color:#5a3a10;}
+  .etat-sync.en-attente{color:var(--orange);border-color:#5a3a10;}
+  .etat-sync.aucune-config{color:var(--att);}
   details{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;margin-bottom:12px;padding:0 12px;}
   details summary{padding:10px 0;font-weight:600;cursor:pointer;font-size:14px;}
   details[open] summary{border-bottom:1px solid var(--bordure);margin-bottom:10px;}
@@ -64,7 +70,7 @@
 </head>
 <body>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V12</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V13</span><span class="etat-sync" id="etat-sync" title="État de la synchronisation GitHub">☁️</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -80,6 +86,7 @@
   </div>
 
   <div class="section-titre" style="margin-top:16px;">Synchronisation GitHub</div>
+  <div class="msg info" style="display:block;">Les événements et les destinataires sont poussés automatiquement vers GitHub après chaque modification, et récupérés automatiquement au démarrage si les identifiants ci-dessous sont enregistrés. Les boutons restent disponibles pour forcer une synchronisation manuelle. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement dans ce navigateur et ne sont jamais écrits dans le fichier JSON partagé.</div>
   <div class="champ"><label>Propriétaire (owner)</label><input type="text" id="champ-owner" placeholder="ex. Hammerinhank"></div>
   <div class="champ"><label>Dépôt (repo)</label><input type="text" id="champ-repo" placeholder="ex. anniversaires"></div>
   <div class="champ"><label>Branche</label><input type="text" id="champ-branche" value="main"></div>
@@ -171,7 +178,7 @@
 </div>
 
 <script>
-const VERSION = "V12";
+const VERSION = "V13";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
@@ -184,7 +191,8 @@ const HISTORIQUE = [
   { v: "V9", note: "Correctif racine : chargement remplacé par un import() de module ES prêt à l'emploi (jsdelivr +esm, puis esm.sh en secours)." },
   { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne, et bascule Chronologique/Alphabétique pour « Tous les événements »." },
   { v: "V11", note: "Le champ e-mail accepte plusieurs adresses séparées par une virgule (destinataires multiples), stockées en tableau JSON." },
-  { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." }
+  { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." },
+  { v: "V13", note: "Persistance automatique sur GitHub : chaque ajout/modification/suppression d'événement ou de destinataire est poussé automatiquement (regroupé si les changements se suivent rapidement), et les données sont récupérées automatiquement au démarrage si les identifiants GitHub sont enregistrés. Indicateur d'état de synchronisation ajouté à côté du titre. Les boutons manuels « Envoyer / Récupérer » restent disponibles. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement locaux et ne sont jamais écrits dans le fichier JSON partagé." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
@@ -199,6 +207,37 @@ let evenements = [];
 let destinataires = [];
 let indexEditionEmail = null; // index en cours d'édition dans la liste des destinataires, ou null
 let triTousMode = localStorage.getItem("anniversaires_tri_tous") || "chrono"; // "chrono" | "alpha"
+
+// ---------- Synchronisation automatique vers GitHub ----------
+let minuteurSync = null;
+let synchronisationEnCours = false;
+let synchronisationEnAttente = false;
+
+function majEtatSync(etat){
+  const el = document.getElementById("etat-sync");
+  if (!el) return;
+  el.classList.remove("ok","erreur","en-cours","en-attente","aucune-config");
+  const libelles = {
+    "ok": "☁️ Synchronisé",
+    "erreur": "⚠️ Sync échouée",
+    "en-cours": "⏳ Synchronisation…",
+    "en-attente": "⏳ En attente…",
+    "aucune-config": "☁️ Local uniquement"
+  };
+  el.textContent = libelles[etat] || "☁️";
+  el.classList.add(etat);
+}
+
+function programmerSynchronisation(){
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    majEtatSync("aucune-config");
+    return;
+  }
+  majEtatSync("en-attente");
+  clearTimeout(minuteurSync);
+  minuteurSync = setTimeout(() => { pousserVersGitHub(true); }, 1500);
+}
 
 // ---------- Persistance locale ----------
 function chargerLocal(){
@@ -244,6 +283,7 @@ function sauverGmailLocal(){
 
 function sauverDestinatairesLocal(){
   localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
+  programmerSynchronisation();
 }
 
 function renderListeDestinataires(){
@@ -315,6 +355,7 @@ document.getElementById("liste-destinataires").addEventListener("click", (e) => 
 
 function sauverEvenementsLocal(){
   localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+  programmerSynchronisation();
 }
 
 // ---------- Rendu ----------
@@ -541,6 +582,9 @@ document.getElementById("btn-enregistrer-config").addEventListener("click", () =
   }
   localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
   afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
+  majEtatSync("en-attente");
+  // Les identifiants viennent d'être renseignés : on tente une synchro immédiate.
+  pousserVersGitHub(true);
 });
 
 document.getElementById("btn-effacer-config").addEventListener("click", () => {
@@ -550,6 +594,7 @@ document.getElementById("btn-effacer-config").addEventListener("click", () => {
   document.getElementById("champ-repo").value = "";
   document.getElementById("champ-token").value = "";
   afficherMsg("msg-sync", "Identifiants effacés.", "ok");
+  majEtatSync("aucune-config");
 });
 
 function lireConfig(){
@@ -579,14 +624,22 @@ function b64DecodeUtf8(str){
   return decodeURIComponent(escape(atob(str)));
 }
 
-document.getElementById("btn-push").addEventListener("click", async () => {
+// Envoie l'état courant (évènements + destinataires uniquement — jamais le token, la config
+// de dépôt ni les identifiants Gmail) vers GitHub. Appelée automatiquement après chaque
+// modification (via programmerSynchronisation) et par le bouton manuel « Envoyer vers GitHub ».
+async function pousserVersGitHub(silencieux){
   const config = lireConfig();
   if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
-    return;
+    majEtatSync("aucune-config");
+    return false;
   }
-  const btn = document.getElementById("btn-push");
-  btn.disabled = true;
+  if (synchronisationEnCours){
+    synchronisationEnAttente = true;
+    return false;
+  }
+  synchronisationEnCours = true;
+  majEtatSync("en-cours");
+  let succes = false;
   try{
     const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
     let sha = null;
@@ -612,12 +665,65 @@ document.getElementById("btn-push").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
+    majEtatSync("ok");
+    if (!silencieux) afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
+    succes = true;
   }catch(e){
-    afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
+    majEtatSync("erreur");
+    if (!silencieux) afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
+    succes = false;
   }finally{
-    btn.disabled = false;
+    synchronisationEnCours = false;
+    if (synchronisationEnAttente){
+      synchronisationEnAttente = false;
+      // D'autres changements sont arrivés pendant l'envoi : on repousse l'état le plus récent.
+      pousserVersGitHub(true);
+    }
   }
+  return succes;
+}
+
+// Récupère évènements + destinataires depuis GitHub et remplace l'état local.
+// Appelée automatiquement au démarrage (silencieuse) si des identifiants sont enregistrés,
+// et par le bouton manuel « Récupérer depuis GitHub ».
+async function tirerDepuisGitHub(silencieux){
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    majEtatSync("aucune-config");
+    return false;
+  }
+  majEtatSync("en-cours");
+  try{
+    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
+    const data = await githubApi(url);
+    const contenu = JSON.parse(b64DecodeUtf8(data.content));
+    evenements = contenu.evenements || [];
+    if (contenu.destinataires && contenu.destinataires.length) destinataires = contenu.destinataires;
+    else if (contenu.destinataire) destinataires = [contenu.destinataire];
+    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
+    renderListeDestinataires();
+    rafraichir();
+    majEtatSync("ok");
+    if (!silencieux) afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
+    return true;
+  }catch(e){
+    majEtatSync("erreur");
+    if (!silencieux) afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
+    return false;
+  }
+}
+
+document.getElementById("btn-push").addEventListener("click", async () => {
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
+    return;
+  }
+  const btn = document.getElementById("btn-push");
+  btn.disabled = true;
+  await pousserVersGitHub(false);
+  btn.disabled = false;
 });
 
 document.getElementById("btn-pull").addEventListener("click", async () => {
@@ -629,23 +735,8 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
   if (!confirm("Remplacer la liste locale par la version de GitHub ?")) return;
   const btn = document.getElementById("btn-pull");
   btn.disabled = true;
-  try{
-    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
-    const data = await githubApi(url);
-    const contenu = JSON.parse(b64DecodeUtf8(data.content));
-    evenements = contenu.evenements || [];
-    if (contenu.destinataires && contenu.destinataires.length) destinataires = contenu.destinataires;
-    else if (contenu.destinataire) destinataires = [contenu.destinataire];
-    sauverEvenementsLocal();
-    sauverDestinatairesLocal();
-    renderListeDestinataires();
-    rafraichir();
-    afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
-  }catch(e){
-    afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
-  }finally{
-    btn.disabled = false;
-  }
+  await tirerDepuisGitHub(false);
+  btn.disabled = false;
 });
 
 // ---------- Mise à jour des secrets GitHub Actions ----------
@@ -870,7 +961,7 @@ document.getElementById("btn-ferme-historique").addEventListener("click", () => 
   document.getElementById("panneau-historique").style.display = "none";
 });
 
-// ---------- Import initial (si aucune donnée locale) ----------
+// ---------- Import initial (si aucune donnée locale, ni identifiants GitHub) ----------
 async function importerDonneesInitiales(){
   if (evenements.length > 0) return;
   try{
@@ -880,8 +971,8 @@ async function importerDonneesInitiales(){
     evenements = data.evenements || [];
     if (data.destinataires && data.destinataires.length) destinataires = data.destinataires;
     else if (data.destinataire) destinataires = [data.destinataire];
-    sauverEvenementsLocal();
-    sauverDestinatairesLocal();
+    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
     renderListeDestinataires();
   }catch(e){ /* pas de fichier local co-hébergé : pas grave, liste vide */ }
 }
@@ -889,8 +980,18 @@ async function importerDonneesInitiales(){
 // ---------- Démarrage ----------
 (async function demarrer(){
   chargerLocal();
-  await importerDonneesInitiales();
   rafraichir();
+
+  const config = lireConfig();
+  if (config.owner && config.repo && config.token){
+    // Des identifiants sont enregistrés : GitHub fait foi, on récupère silencieusement
+    // la dernière version avant d'afficher (en gardant les données locales en secours si ça échoue).
+    await tirerDepuisGitHub(true);
+  } else {
+    majEtatSync("aucune-config");
+    await importerDonneesInitiales();
+    rafraichir();
+  }
 })();
 </script>
 </body>
