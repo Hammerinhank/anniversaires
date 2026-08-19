@@ -41,6 +41,8 @@ def evenements_de_demain(evenements, demain):
     for evt in evenements:
         if not evt.get("jour"):
             continue  # date incomplète, ignoré tant qu'Henri n'a pas précisé le jour
+        if evt.get("noMail"):
+            continue  # rappel désactivé pour cette personne
         if evt["jour"] == demain.day and evt["mois"] == demain.month:
             resultats.append(evt)
     return resultats
@@ -56,8 +58,8 @@ def prochaine_occurrence(evt, aujourdhui):
 
 
 def trouver_prochain_evenement(evenements, aujourdhui):
-    """Utilisé en mode test : l'événement réel le plus proche dans le temps (jour connu requis)."""
-    candidats = [(prochaine_occurrence(e, aujourdhui), e) for e in evenements if e.get("jour")]
+    """Utilisé en mode test : l'événement réel le plus proche dans le temps (jour connu requis, rappel activé)."""
+    candidats = [(prochaine_occurrence(e, aujourdhui), e) for e in evenements if e.get("jour") and not e.get("noMail")]
     if not candidats:
         return None
     candidats.sort(key=lambda c: c[0])
