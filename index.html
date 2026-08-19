@@ -2,997 +2,1446 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Anniversaires &amp; Fêtes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supprime-doublon</title>
 <style>
-  :root{
-    --fond:#0f1115; --carte:#1a1d24; --carte2:#20242c; --texte:#e8e9ec;
-    --att:#9aa0ab; --accent:#4f8cff; --vert:#00e676; --orange:#ff9500; --rouge:#ff3b30;
-    --bordure:#2c303a;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--fond);color:var(--texte);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:14px;padding-bottom:60px;}
-  h1{font-size:20px;margin:0 0 4px;}
-  .sous-titre{color:var(--att);font-size:13px;margin-bottom:14px;}
-  .badge-version{display:inline-block;background:var(--carte2);border:1px solid var(--bordure);color:var(--vert);font-weight:700;font-size:13px;padding:3px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;cursor:pointer;}
-  .etat-sync{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;background:var(--carte2);border:1px solid var(--bordure);color:var(--att);white-space:nowrap;}
-  .etat-sync.ok{color:var(--vert);border-color:#1e4a2c;}
-  .etat-sync.erreur{color:#ff8a80;border-color:#5a2323;}
-  .etat-sync.en-cours{color:var(--orange);border-color:#5a3a10;}
-  .etat-sync.en-attente{color:var(--orange);border-color:#5a3a10;}
-  .etat-sync.aucune-config{color:var(--att);}
-  details{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;margin-bottom:12px;padding:0 12px;}
-  details summary{padding:10px 0;font-weight:600;cursor:pointer;font-size:14px;}
-  details[open] summary{border-bottom:1px solid var(--bordure);margin-bottom:10px;}
-  .champ{margin-bottom:10px;}
-  .champ label{display:block;font-size:12px;color:var(--att);margin-bottom:4px;}
-  input[type=text],input[type=email],input[type=password],input[type=number],select{
-    width:100%;padding:9px 10px;background:var(--carte2);border:1px solid var(--bordure);
-    border-radius:8px;color:var(--texte);font-size:14px;}
-  .ligne{display:flex;gap:8px;}
-  .ligne > *{flex:1;}
-  button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 14px;
-    font-size:14px;font-weight:600;cursor:pointer;}
-  button.secondaire{background:var(--carte2);border:1px solid var(--bordure);color:var(--texte);}
-  button.danger{background:var(--rouge);}
-  button:disabled{opacity:.5;}
-  .rangee-boutons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
-  .msg{font-size:12px;padding:8px 10px;border-radius:8px;margin-top:8px;display:none;}
-  .msg.ok{display:block;background:#12301d;color:var(--vert);border:1px solid #1e4a2c;}
-  .msg.err{display:block;background:#3a1515;color:#ff8a80;border:1px solid #5a2323;}
-  .msg.info{display:block;background:#182338;color:#9cc0ff;border:1px solid #2a3f66;}
-  .section-titre{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--att);text-transform:uppercase;letter-spacing:.04em;}
-  .carte-evt{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-  .carte-evt.incomplet{border-color:var(--orange);}
-  .pastille{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
-  .pastille.anniv{background:var(--accent);}
-  .pastille.fete{background:var(--vert);}
-  .infos-evt{flex:1;min-width:0;}
-  .nom-evt{font-weight:600;font-size:14px;}
-  .detail-evt{font-size:12px;color:var(--att);}
-  .jours-restants{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--carte2);white-space:nowrap;}
-  .jours-restants.demain{background:var(--rouge);color:#fff;}
-  .jours-restants.bientot{background:var(--orange);color:#1a1300;}
-  .boutons-evt{display:flex;gap:4px;}
-  .boutons-evt button{padding:6px 8px;font-size:12px;}
-  .vide{color:var(--att);font-size:13px;text-align:center;padding:20px;}
-  .ligne-destinataire{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--bordure);}
-  .ligne-destinataire:last-child{border-bottom:none;}
-  .ligne-destinataire span{flex:1;font-size:13px;word-break:break-all;}
-  .ligne-destinataire button{padding:4px 8px;font-size:12px;}
-  #panneau-historique{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;padding:20px;}
-  #panneau-historique .carte-hist{background:var(--carte);border:1px solid var(--bordure);border-radius:12px;max-width:480px;margin:40px auto;max-height:75vh;overflow-y:auto;padding:16px;}
-  #panneau-historique h3{margin-top:0;}
-  #panneau-historique ul{padding-left:18px;font-size:13px;color:var(--att);}
-  #panneau-historique li{margin-bottom:6px;}
-  .ferme-panneau{float:right;background:var(--carte2);border:1px solid var(--bordure);}
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#f5f5f7; color:#1d1d1f; margin:0; padding:20px; }
+  .container { max-width:500px; margin:0 auto; }
+  .card { background:#fff; border-radius:14px; padding:20px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+  h1 { font-size:22px; }
+  .version { font-size:13px; font-weight:500; color:#86868b; margin-left:6px; }
+  h2 { font-size:18px; margin-top:0; color:#0071e3; }
+  .section-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .section-toggle .chevron { font-size:13px; color:#86868b; transition:transform .2s ease; }
+  .section-toggle.open .chevron { transform:rotate(180deg); }
+  .section-body { display:none; margin-top:16px; }
+  .section-body.open { display:block; }
+  label { display:block; font-size:13px; font-weight:600; margin-bottom:5px; color:#86868b; }
+  input { width:100%; padding:12px; margin-bottom:15px; border:1px solid #d2d2d7; border-radius:8px; font-size:15px; box-sizing:border-box; background:#fbfbfd; }
+  .combo { position:relative; margin-bottom:15px; }
+  .combo input { margin-bottom:0; padding-right:48px; }
+  .combo-toggle { position:absolute; top:0; right:0; height:100%; width:44px; border:none; background:transparent; color:#0071e3; font-size:13px; cursor:pointer; border-radius:0 8px 8px 0; }
+  .combo-toggle:active { background:#eef4ff; }
+  .combo-panel { display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#fff; border:1px solid #d2d2d7; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:260px; overflow-y:auto; z-index:500; }
+  .combo-panel.visible { display:block; }
+  .combo-opt { padding:11px 14px; font-size:15px; font-family:monospace; cursor:pointer; border-bottom:1px solid #f0f0f2; }
+  .combo-opt:last-child { border-bottom:none; }
+  .combo-opt:active { background:#eaf3ff; }
+  .combo-recharger { padding:11px 14px; font-size:13px; font-weight:600; color:#0071e3; cursor:pointer; border-bottom:1px solid #f0f0f2; background:#fbfbfd; }
+  .combo-vide { padding:11px 14px; font-size:14px; color:#86868b; }
+  .btn { background:#0071e3; color:#fff; font-weight:600; border:none; padding:14px; border-radius:10px; width:100%; cursor:pointer; font-size:16px; }
+  .btn:active { background:#005bb5; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-secondaire { background:#6e6e73; margin-top:10px; }
+  .btn-secondaire:active { background:#57575b; }
+  .status { padding:12px; border-radius:8px; font-size:14px; font-weight:500; white-space:pre-wrap; display:none; margin-top:10px; }
+  .success { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+  .error { background:#ffebee; color:#c62828; border:1px solid #ffcdd2; }
+  .btn-statut { display:block; margin-top:12px; background:#0071e3; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-statut:active { background:#005bb5; }
+  .file-item { display:flex; flex-direction:column; gap:6px; background:#f5f5f7; padding:9px 10px; border-radius:8px; margin-bottom:7px; font-size:14px; }
+  .file-item.dup { border:2px solid #ff9500; background:#fff8ec; }
+  .file-row-top { display:flex; align-items:flex-start; gap:6px; }
+  .file-name { flex:1; font-family:monospace; min-width:0; word-break:break-all; line-height:1.3; }
+  .file-name.cliquable { cursor:pointer; color:#0071e3; }
+  .file-name.cliquable:active { opacity:.6; }
+  .type-badge { flex-shrink:0; color:#0071e3; font-weight:600; font-size:12px; background:#eef4ff; padding:4px 9px; border-radius:6px; border:none; font-family:inherit; }
+  .type-badge.clickable { cursor:pointer; }
+  .type-badge.clickable:active { background:#d8e8ff; }
+  .file-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .file-actions-right { display:flex; flex-wrap:wrap; gap:6px; margin-left:auto; }
+  .btn-vue { background:#34c759; color:#fff; border:none; padding:7px 12px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .btn-vue:active { background:#248a3d; }
+  .btn-json { background:#5856d6; color:#fff; border:none; padding:7px 12px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .btn-json:active { background:#3e3ca8; }
+  .btn-txt { background:#30b0c7; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .btn-txt:active { background:#2790a3; }
+  .btn-del { background:#ff3b30; color:#fff; border:none; padding:7px 12px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .btn-del:active { background:#c1271d; }
+  .hint { font-size:13px; color:#86868b; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:20px; z-index:1000; }
+  .modal-overlay.visible { display:flex; }
+  .modal-box { background:#fff; border-radius:14px; padding:24px 22px; max-width:340px; width:100%; box-shadow:0 12px 44px rgba(0,0,0,.25); text-align:center; }
+  .modal-message { font-size:15px; line-height:1.45; white-space:pre-wrap; margin-bottom:22px; }
+  .modal-actions { display:flex; gap:10px; }
+  .modal-btn { flex:1; padding:13px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+  .modal-btn-cancel { background:#e5e5ea; color:#1d1d1f; }
+  .modal-btn-confirm { background:#ff3b30; color:#fff; }
+  /* Aperçu plein écran d'une page HTML rendue */
+  .apercu-overlay { position:fixed; inset:0; background:#fff; display:none; flex-direction:column; z-index:2000; }
+  .apercu-overlay.visible { display:flex; }
+  .apercu-header { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#1d1d1f; color:#fff; flex-shrink:0; }
+  .apercu-titre { flex:1; font-family:monospace; font-size:13px; word-break:break-all; }
+  .apercu-close { background:#ff3b30; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .apercu-frame { flex:1; width:100%; border:none; background:#fff; }
+  /* Vue « structure » d'un fichier JSON */
+  .json-content { flex:1; overflow:auto; padding:14px 16px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; line-height:1.6; -webkit-overflow-scrolling:touch; }
+  .json-enfants { margin-left:14px; border-left:1px solid #e5e5ea; padding-left:12px; }
+  .json-ligne { white-space:nowrap; }
+  .json-cle { color:#0071e3; font-weight:600; }
+  .json-type { color:#1d1d1f; }
+  .json-info { color:#86868b; }
+  .json-valeur { color:#248a3d; }
+  /* Vue « contenu brut » d'un fichier texte ou code (.txt / .py) */
+  .texte-content { flex:1; overflow:auto; margin:0; padding:14px 16px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; line-height:1.5; white-space:pre; -webkit-overflow-scrolling:touch; }
+  /* Vue « tous les dépôts » */
+  .repo-bloc { border:1px solid #e5e5ea; border-radius:10px; margin-bottom:10px; overflow:hidden; }
+  .repo-entete { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; background:#f5f5f7; cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .repo-entete:active { background:#ebebee; }
+  .repo-nom { font-weight:600; font-size:15px; word-break:break-all; }
+  .repo-compte { font-size:12px; color:#86868b; font-weight:500; margin-left:6px; }
+  .repo-chevron { font-size:12px; color:#86868b; transition:transform .2s ease; flex-shrink:0; }
+  .repo-chevron.open { transform:rotate(180deg); }
+  .repo-fichiers { display:none; padding:6px 12px 12px; }
+  .repo-fichiers.open { display:block; }
+  .rf-item { display:flex; flex-direction:column; gap:5px; padding:9px 4px; border-bottom:1px solid #f0f0f2; font-size:13px; }
+  .rf-item:last-child { border-bottom:none; }
+  .rf-row-top { display:flex; align-items:flex-start; gap:6px; }
+  .rf-nom { flex:1; min-width:0; font-family:monospace; word-break:break-all; line-height:1.3; }
+  .rf-nom.cliquable { cursor:pointer; color:#0071e3; }
+  .rf-nom.cliquable:active { opacity:.6; }
+  .rf-row-bottom { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .rf-versions { flex-shrink:0; color:#6e6e73; font-size:12px; }
+  .rf-actions { display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .btn-lien, .btn-json-mini { flex-shrink:0; color:#fff; border:none; width:28px; height:28px; border-radius:8px; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+  .btn-lien { background:#5856d6; font-size:14px; }
+  .btn-lien:active { background:#3e3ca8; }
+  .btn-lien.copie { background:#34c759; }
+  .btn-json-mini { background:#8e44ec; font-size:12px; font-weight:700; }
+  .btn-json-mini:active { background:#6b32b8; }
+  .repo-erreur { padding:10px 4px; font-size:13px; color:#c62828; }
+  .repo-progres { font-size:12px; color:#86868b; padding:4px 4px 0; }
 </style>
 </head>
 <body>
-
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V13</span><span class="etat-sync" id="etat-sync" title="État de la synchronisation GitHub">☁️</span></h1>
-<div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
-
-<details id="det-config">
-  <summary>⚙️ Réglages</summary>
-
-  <div class="champ">
-    <label>Adresses e-mail de destination des rappels</label>
-    <div id="liste-destinataires" style="max-height:160px;overflow-y:auto;border:1px solid var(--bordure);border-radius:8px;padding:4px;margin-bottom:8px;background:var(--carte2);"></div>
-    <div class="ligne">
-      <input type="email" id="champ-nouvel-email" placeholder="ajouter@exemple.com">
-      <button class="secondaire" id="btn-ajouter-email" style="flex:0 0 auto;">➕</button>
+<div class="container">
+  <h1>🧹 Supprime-doublon <span class="version" id="version"></span></h1>
+  <div class="card">
+    <h2 class="section-toggle" onclick="basculerReglages()">
+      <span>Réglages</span>
+      <span class="chevron" id="reglages-chevron">▼</span>
+    </h2>
+    <div class="section-body" id="reglages-body">
+      <label for="user">Nom d'utilisateur GitHub</label>
+      <input type="text" id="user" placeholder="Ex : Hammerinhank">
+      <label for="token">Token d'accès (PAT, portée « repo »)</label>
+      <input type="password" id="token" placeholder="ghp_xxxxxxxx">
+      <label for="branch">Branche</label>
+      <input type="text" id="branch" placeholder="main" value="main">
+      <button class="btn" onclick="oublierChamps()" style="background:#6e6e73; margin-top:12px;">Effacer les identifiants mémorisés</button>
     </div>
   </div>
 
-  <div class="section-titre" style="margin-top:16px;">Synchronisation GitHub</div>
-  <div class="msg info" style="display:block;">Les événements et les destinataires sont poussés automatiquement vers GitHub après chaque modification, et récupérés automatiquement au démarrage si les identifiants ci-dessous sont enregistrés. Les boutons restent disponibles pour forcer une synchronisation manuelle. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement dans ce navigateur et ne sont jamais écrits dans le fichier JSON partagé.</div>
-  <div class="champ"><label>Propriétaire (owner)</label><input type="text" id="champ-owner" placeholder="ex. Hammerinhank"></div>
-  <div class="champ"><label>Dépôt (repo)</label><input type="text" id="champ-repo" placeholder="ex. anniversaires"></div>
-  <div class="champ"><label>Branche</label><input type="text" id="champ-branche" value="main"></div>
-  <div class="champ"><label>Chemin du fichier JSON</label><input type="text" id="champ-fichier" value="data/anniversaires.json"></div>
-  <div class="champ"><label>Token GitHub (PAT, droits repo)</label><input type="password" id="champ-token" placeholder="ghp_..."></div>
-
-  <div class="rangee-boutons">
-    <button class="secondaire" id="btn-enregistrer-config">Enregistrer les réglages</button>
-    <button class="danger" id="btn-effacer-config">Effacer les identifiants</button>
-  </div>
-  <div class="rangee-boutons">
-    <button id="btn-push">⬆️ Envoyer vers GitHub</button>
-    <button class="secondaire" id="btn-pull">⬇️ Récupérer depuis GitHub</button>
-  </div>
-  <div class="msg" id="msg-sync"></div>
-
-  <div class="section-titre" style="margin-top:16px;">Test de bout en bout</div>
-  <div class="msg info" style="display:block;">Déclenche le workflow GitHub Actions réel et envoie un vrai e-mail de test (préfixé [TEST]) basé sur le prochain événement du calendrier. Nécessite que les réglages ci-dessus soient enregistrés.</div>
-  <div class="rangee-boutons">
-    <button id="btn-test-e2e">🧪 Lancer le test</button>
-  </div>
-  <div id="statut-test" class="msg info" style="display:none;"></div>
-
-  <div class="section-titre" style="margin-top:16px;">Identifiants Gmail (secrets GitHub Actions)</div>
-  <div class="msg info" style="display:block;">Stockés uniquement dans ce navigateur (localStorage). Le bouton ci-dessous les chiffre et les envoie directement comme secrets du dépôt — plus besoin de passer par l'interface GitHub.</div>
-  <div class="champ"><label>Adresse Gmail expéditrice</label><input type="email" id="champ-gmail-user" placeholder="toi@gmail.com"></div>
-  <div class="champ"><label>Mot de passe d'application Gmail (16 caractères)</label><input type="text" id="champ-gmail-app-password" placeholder="xxxx xxxx xxxx xxxx" style="font-family:monospace;" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-  <div class="rangee-boutons">
-    <button id="btn-maj-secrets">🔐 Mettre à jour les secrets sur GitHub</button>
-  </div>
-  <div class="msg" id="msg-secrets"></div>
-  <div class="rangee-boutons">
-    <button class="secondaire" id="btn-diag-gmail">🔍 Diagnostiquer Gmail (sans envoyer de mail)</button>
-  </div>
-  <div id="statut-diag-gmail" class="msg info" style="display:none;"></div>
-</details>
-
-<details id="det-ajout">
-  <summary>➕ Ajouter un événement</summary>
-  <div class="champ"><label>Nom</label><input type="text" id="champ-nom"></div>
-  <div class="ligne">
-    <div class="champ"><label>Jour</label><input type="number" id="champ-jour" min="1" max="31"></div>
-    <div class="champ"><label>Mois</label>
-      <select id="champ-mois">
-        <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
-        <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
-        <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
-        <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
-      </select>
+  <div class="card">
+    <label for="repo">Nom du dépôt</label>
+    <div class="combo">
+      <input type="text" id="repo" placeholder="Ex : test-app" autocomplete="off" oninput="filtrerDepots()">
+      <button type="button" class="combo-toggle" onclick="basculerListe()" aria-label="Afficher mes dépôts">▼</button>
+      <div class="combo-panel" id="combo-panel"></div>
     </div>
-    <div class="champ"><label>Année (optionnel)</label><input type="number" id="champ-annee" min="1900" max="2026"></div>
+    <button class="btn" onclick="lister()">Lister les fichiers (avec leur vraie casse)</button>
+    <button class="btn btn-secondaire" onclick="listerTout()">Lister tous les fichiers de tous les dépôts et gists</button>
+    <p class="hint" style="margin-bottom:0;">Les fichiers en double (même nom, casse différente) sont encadrés en orange. Vérifie bien lequel tu supprimes : garde <strong>index.html</strong> (minuscule), supprime <strong>Index.html</strong> (majuscule). Un bouton <strong>👁 Aperçu</strong> apparaît sur les fichiers HTML pour les voir tels qu'affichés dans un navigateur.</p>
   </div>
-  <div class="champ">
-    <label>Type</label>
-    <select id="champ-type"><option value="Anniversaire">Anniversaire</option><option value="Fête">Fête</option></select>
+
+  <div class="card" id="files-card" style="display:none;">
+    <h2>Fichiers du dépôt</h2>
+    <div id="files-list"></div>
   </div>
-  <div class="champ">
-    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--texte);">
-      <input type="checkbox" id="champ-no-mail" style="width:auto;">
-      🔕 Ne pas envoyer de rappel par e-mail pour cette personne
-    </label>
+
+  <div class="card" id="tous-card" style="display:none;">
+    <h2 style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <span>Tous les dépôts et gists</span>
+      <button class="btn btn-secondaire" id="btn-tout-ouvrir" style="width:auto; margin-top:0; padding:8px 14px; font-size:13px;" onclick="basculerToutOuvrir()">Tout ouvrir</button>
+    </h2>
+    <div id="tous-list"></div>
   </div>
-  <button id="btn-ajouter">Ajouter</button>
-  <input type="hidden" id="champ-id-edition">
-  <div class="msg" id="msg-ajout"></div>
-</details>
 
-<div class="section-titre">Prochainement</div>
-<div id="liste-prochains"></div>
-
-<div class="section-titre">Dates incomplètes — à compléter</div>
-<div id="liste-incompletes"></div>
-
-<div class="section-titre" style="display:flex;align-items:center;justify-content:space-between;">
-  <span>Tous les événements (<span id="compteur-total">0</span>)</span>
-  <span style="display:flex;gap:4px;">
-    <button class="secondaire" id="btn-tri-chrono" style="padding:4px 10px;font-size:11px;">📅 Chrono</button>
-    <button class="secondaire" id="btn-tri-alpha" style="padding:4px 10px;font-size:11px;">🔤 Alpha</button>
-  </span>
+  <div id="status" class="status"></div>
 </div>
-<div id="liste-tous"></div>
 
-<div id="panneau-historique">
-  <div class="carte-hist">
-    <button class="ferme-panneau" id="btn-ferme-historique">✕</button>
-    <h3>Historique des versions</h3>
-    <ul id="liste-historique"></ul>
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div id="modal-message" class="modal-message"></div>
+    <div class="modal-actions">
+      <button id="modal-cancel" class="modal-btn modal-btn-cancel">Annuler</button>
+      <button id="modal-confirm" class="modal-btn modal-btn-confirm">Supprimer</button>
+    </div>
   </div>
+</div>
+
+<!-- Aperçu plein écran : la page HTML est rendue dans une iframe, comme dans un navigateur -->
+<div id="apercu-overlay" class="apercu-overlay">
+  <div class="apercu-header">
+    <span id="apercu-titre" class="apercu-titre"></span>
+    <button id="apercu-close" class="apercu-close">Fermer</button>
+  </div>
+  <iframe id="apercu-frame" class="apercu-frame"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"></iframe>
+</div>
+
+<!-- Structure d'un fichier JSON (arborescence des clés et types) -->
+<div id="json-overlay" class="apercu-overlay">
+  <div class="apercu-header">
+    <span id="json-titre" class="apercu-titre"></span>
+    <button id="json-close" class="apercu-close">Fermer</button>
+  </div>
+  <div id="json-content" class="json-content"></div>
+</div>
+
+<!-- Contenu brut d'un fichier texte ou code (.txt / .py) -->
+<div id="texte-overlay" class="apercu-overlay">
+  <div class="apercu-header">
+    <span id="texte-titre" class="apercu-titre"></span>
+    <button id="texte-close" class="apercu-close">Fermer</button>
+  </div>
+  <pre id="texte-content" class="texte-content"></pre>
 </div>
 
 <script>
-const VERSION = "V13";
-const HISTORIQUE = [
-  { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
-  { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
-  { v: "V3", note: "Champs Gmail (adresse + mot de passe d'application) persistants en local, avec bouton pour chiffrer et pousser directement les secrets GMAIL_USER / GMAIL_APP_PASSWORD sur GitHub." },
-  { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." },
-  { v: "V5", note: "Le mot de passe d'application Gmail s'affiche désormais en clair (police à chasse fixe) plutôt que masqué, autocorrection/autocapitalisation désactivées sur ce champ." },
-  { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." },
-  { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite." },
-  { v: "V8", note: "Chargement avec 3 CDN de secours essayés successivement." },
-  { v: "V9", note: "Correctif racine : chargement remplacé par un import() de module ES prêt à l'emploi (jsdelivr +esm, puis esm.sh en secours)." },
-  { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne, et bascule Chronologique/Alphabétique pour « Tous les événements »." },
-  { v: "V11", note: "Le champ e-mail accepte plusieurs adresses séparées par une virgule (destinataires multiples), stockées en tableau JSON." },
-  { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." },
-  { v: "V13", note: "Persistance automatique sur GitHub : chaque ajout/modification/suppression d'événement ou de destinataire est poussé automatiquement (regroupé si les changements se suivent rapidement), et les données sont récupérées automatiquement au démarrage si les identifiants GitHub sont enregistrés. Indicateur d'état de synchronisation ajouté à côté du titre. Les boutons manuels « Envoyer / Récupérer » restent disponibles. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement locaux et ne sont jamais écrits dans le fichier JSON partagé." }
-];
+  // ------------------------------------------------------------------
+  // Numéro de version : un seul endroit à modifier pour le faire évoluer.
+  // ------------------------------------------------------------------
+  const VERSION = "3.0";
+  document.getElementById('version').textContent = "v" + VERSION;
 
-const CLE_EVENEMENTS = "anniversaires_evenements";
-const CLE_CONFIG = "anniversaires_config";
-const CLE_EMAIL = "anniversaires_email"; // ancien format (chaîne), conservé en lecture pour migration
-const CLE_DESTINATAIRES = "anniversaires_destinataires";
-const CLE_GMAIL = "anniversaires_gmail";
-
-const NOMS_MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-
-let evenements = [];
-let destinataires = [];
-let indexEditionEmail = null; // index en cours d'édition dans la liste des destinataires, ou null
-let triTousMode = localStorage.getItem("anniversaires_tri_tous") || "chrono"; // "chrono" | "alpha"
-
-// ---------- Synchronisation automatique vers GitHub ----------
-let minuteurSync = null;
-let synchronisationEnCours = false;
-let synchronisationEnAttente = false;
-
-function majEtatSync(etat){
-  const el = document.getElementById("etat-sync");
-  if (!el) return;
-  el.classList.remove("ok","erreur","en-cours","en-attente","aucune-config");
-  const libelles = {
-    "ok": "☁️ Synchronisé",
-    "erreur": "⚠️ Sync échouée",
-    "en-cours": "⏳ Synchronisation…",
-    "en-attente": "⏳ En attente…",
-    "aucune-config": "☁️ Local uniquement"
-  };
-  el.textContent = libelles[etat] || "☁️";
-  el.classList.add(etat);
-}
-
-function programmerSynchronisation(){
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
-    return;
+  function val(id){ return document.getElementById(id).value.trim(); }
+  function headers(){ return { "Authorization": `token ${val('token')}`, "Accept": "application/vnd.github+json" }; }
+  function message(txt, type){
+    const b = document.getElementById('status');
+    b.style.display='block'; b.className='status '+type; b.textContent=txt;
+    b.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
-  majEtatSync("en-attente");
-  clearTimeout(minuteurSync);
-  minuteurSync = setTimeout(() => { pousserVersGitHub(true); }, 1500);
-}
-
-// ---------- Persistance locale ----------
-function chargerLocal(){
-  try{
-    const brut = localStorage.getItem(CLE_EVENEMENTS);
-    evenements = brut ? JSON.parse(brut) : [];
-  }catch(e){ evenements = []; }
-
-  const cfg = document.getElementById.bind(document);
-  try{
-    const config = JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}");
-    document.getElementById("champ-owner").value = config.owner || "";
-    document.getElementById("champ-repo").value = config.repo || "";
-    document.getElementById("champ-branche").value = config.branche || "main";
-    document.getElementById("champ-fichier").value = config.fichier || "data/anniversaires.json";
-    document.getElementById("champ-token").value = config.token || "";
-  }catch(e){}
-
-  try{
-    const brutDest = localStorage.getItem(CLE_DESTINATAIRES);
-    if (brutDest){
-      destinataires = JSON.parse(brutDest);
-    } else {
-      const ancien = localStorage.getItem(CLE_EMAIL) || "";
-      destinataires = ancien ? ancien.split(/[,;]/).map(s => s.trim()).filter(s => s) : [];
+  // Greffe un bouton d'action sous le dernier message (retiré au message suivant,
+  // puisque message() réécrit le contenu de la zone de statut).
+  function ajouterBoutonStatut(label, action){
+    const b = document.getElementById('status');
+    const btn = document.createElement('button');
+    btn.className = 'btn-statut'; btn.textContent = label;
+    btn.addEventListener('click', action);
+    b.appendChild(btn);
+    b.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  function verifier(){
+    if(!val('user') || !val('token') || !val('repo') || !val('branch')){
+      // Si le champ manquant est dans Réglages (replié par défaut), on l'ouvre.
+      if(!val('user') || !val('token') || !val('branch')) ouvrirReglages();
+      message("Remplis les quatre champs (utilisateur, token, dépôt, branche).", "error");
+      return false;
     }
-  }catch(e){ destinataires = []; }
-  renderListeDestinataires();
-
-  try{
-    const gmail = JSON.parse(localStorage.getItem(CLE_GMAIL) || "{}");
-    document.getElementById("champ-gmail-user").value = gmail.user || "";
-    document.getElementById("champ-gmail-app-password").value = gmail.appPassword || "";
-  }catch(e){}
-}
-
-function sauverGmailLocal(){
-  localStorage.setItem(CLE_GMAIL, JSON.stringify({
-    user: document.getElementById("champ-gmail-user").value.trim(),
-    appPassword: document.getElementById("champ-gmail-app-password").value.trim()
-  }));
-}
-
-function sauverDestinatairesLocal(){
-  localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
-  programmerSynchronisation();
-}
-
-function renderListeDestinataires(){
-  const conteneur = document.getElementById("liste-destinataires");
-  conteneur.innerHTML = "";
-  if (destinataires.length === 0){
-    conteneur.innerHTML = '<div class="vide" style="padding:10px;">Aucun destinataire</div>';
-    return;
-  }
-  destinataires.forEach((email, i) => {
-    const ligne = document.createElement("div");
-    ligne.className = "ligne-destinataire";
-    ligne.innerHTML = `
-      <span>${escHtml(email)}</span>
-      <button class="secondaire" data-action="editer-email" data-index="${i}">✏️</button>
-      <button class="danger" data-action="supprimer-email" data-index="${i}">🗑️</button>
-    `;
-    conteneur.appendChild(ligne);
-  });
-}
-
-document.getElementById("btn-ajouter-email").addEventListener("click", () => {
-  const champ = document.getElementById("champ-nouvel-email");
-  const valeur = champ.value.trim();
-  if (!valeur || !valeur.includes("@")){
-    afficherMsg("msg-sync", "Adresse e-mail invalide.", "err");
-    return;
-  }
-  if (indexEditionEmail !== null){
-    destinataires[indexEditionEmail] = valeur;
-    indexEditionEmail = null;
-    document.getElementById("btn-ajouter-email").textContent = "➕";
-  } else {
-    if (destinataires.includes(valeur)){
-      afficherMsg("msg-sync", "Cette adresse est déjà dans la liste.", "err");
-      return;
-    }
-    destinataires.push(valeur);
-  }
-  champ.value = "";
-  sauverDestinatairesLocal();
-  renderListeDestinataires();
-});
-
-document.getElementById("liste-destinataires").addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-action]");
-  if (!btn) return;
-  const index = parseInt(btn.dataset.index, 10);
-
-  if (btn.dataset.action === "supprimer-email"){
-    if (!confirm(`Supprimer « ${destinataires[index]} » de la liste ?`)) return;
-    destinataires.splice(index, 1);
-    if (indexEditionEmail === index){
-      indexEditionEmail = null;
-      document.getElementById("champ-nouvel-email").value = "";
-      document.getElementById("btn-ajouter-email").textContent = "➕";
-    }
-    sauverDestinatairesLocal();
-    renderListeDestinataires();
-  }
-
-  if (btn.dataset.action === "editer-email"){
-    document.getElementById("champ-nouvel-email").value = destinataires[index];
-    indexEditionEmail = index;
-    document.getElementById("btn-ajouter-email").textContent = "✓";
-    document.getElementById("champ-nouvel-email").focus();
-  }
-});
-
-function sauverEvenementsLocal(){
-  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
-  programmerSynchronisation();
-}
-
-// ---------- Rendu ----------
-function joursRestantsAvant(jour, mois){
-  const aujourdhui = new Date();
-  aujourdhui.setHours(0,0,0,0);
-  let annee = aujourdhui.getFullYear();
-  let prochaine = new Date(annee, mois - 1, jour);
-  prochaine.setHours(0,0,0,0);
-  if (prochaine < aujourdhui){
-    prochaine = new Date(annee + 1, mois - 1, jour);
-  }
-  return Math.round((prochaine - aujourdhui) / 86400000);
-}
-
-function libelleAge(evt){
-  if (!evt.annee) return "";
-  const j = joursRestantsAvant(evt.jour, evt.mois);
-  const aujourdhui = new Date();
-  const anneeProchaine = (j === 0 || (new Date()).getMonth()+1 === evt.mois && (new Date()).getDate() <= evt.jour)
-    ? aujourdhui.getFullYear() : aujourdhui.getFullYear() + (aujourdhui.getMonth()+1 > evt.mois || (aujourdhui.getMonth()+1 === evt.mois && aujourdhui.getDate() > evt.jour) ? 1 : 0);
-  const age = anneeProchaine - evt.annee;
-  return ` (${age} ans)`;
-}
-
-function carteEvenement(evt, avecJours){
-  const div = document.createElement("div");
-  div.className = "carte-evt" + (evt.incertain ? " incomplet" : "");
-  if (evt.noMail) div.style.opacity = "0.55";
-
-  let detailDate;
-  let jours = null;
-  if (evt.jour){
-    jours = joursRestantsAvant(evt.jour, evt.mois);
-    detailDate = `${evt.jour} ${NOMS_MOIS[evt.mois-1]}` + libelleAge(evt);
-  } else {
-    detailDate = `${NOMS_MOIS[evt.mois-1] || "?"} ${evt.annee || ""} — jour inconnu`;
-  }
-
-  const pastilleClasse = evt.type === "Fête" ? "fete" : "anniv";
-  const puceNoMail = evt.noMail ? ` <span title="Rappel désactivé">🔕</span>` : "";
-
-  let badgeJours = "";
-  if (avecJours && jours !== null){
-    let cls = "jours-restants";
-    if (jours === 0) cls += " demain-x"; // n'est jamais 0 côté "veille", gardé pour clarté
-    if (jours === 1) cls += " demain";
-    else if (jours <= 7) cls += " bientot";
-    badgeJours = `<span class="${cls}">${jours === 0 ? "aujourd'hui" : jours === 1 ? "demain" : jours + " j"}</span>`;
-  }
-
-  div.innerHTML = `
-    <span class="pastille ${pastilleClasse}"></span>
-    <div class="infos-evt">
-      <div class="nom-evt">${escHtml(evt.nom)}${puceNoMail} <span style="font-weight:400;color:var(--att);font-size:12px;">· ${evt.type}</span></div>
-      <div class="detail-evt">${detailDate}</div>
-    </div>
-    ${badgeJours}
-    <div class="boutons-evt">
-      <button class="secondaire" data-action="editer" data-id="${evt.id}">✏️</button>
-      <button class="danger" data-action="supprimer" data-id="${evt.id}">🗑️</button>
-    </div>
-  `;
-  return div;
-}
-
-function escHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function rafraichir(){
-  const conteneurProchains = document.getElementById("liste-prochains");
-  const conteneurIncomplets = document.getElementById("liste-incompletes");
-  const conteneurTous = document.getElementById("liste-tous");
-
-  const complets = evenements.filter(e => e.jour);
-  const incomplets = evenements.filter(e => !e.jour);
-
-  const prochains = [...complets].sort((a,b) => joursRestantsAvant(a.jour,a.mois) - joursRestantsAvant(b.jour,b.mois)).slice(0, 8);
-
-  conteneurProchains.innerHTML = "";
-  if (prochains.length === 0){
-    conteneurProchains.innerHTML = '<div class="vide">Aucun événement</div>';
-  } else {
-    prochains.forEach(e => conteneurProchains.appendChild(carteEvenement(e, true)));
-  }
-
-  conteneurIncomplets.innerHTML = "";
-  const detIncomplet = document.getElementById("liste-incompletes").parentElement;
-  if (incomplets.length === 0){
-    conteneurIncomplets.parentElement.querySelector; // no-op
-    conteneurIncomplets.innerHTML = '<div class="vide">Aucune — tout est complet</div>';
-  } else {
-    incomplets.forEach(e => conteneurIncomplets.appendChild(carteEvenement(e, false)));
-  }
-
-  conteneurTous.innerHTML = "";
-  let tousTries;
-  if (triTousMode === "alpha"){
-    tousTries = [...evenements].sort((a,b) => a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" }));
-  } else {
-    tousTries = [...complets].sort((a,b) => (a.mois - b.mois) || (a.jour - b.jour)).concat(incomplets);
-  }
-  tousTries.forEach(e => conteneurTous.appendChild(carteEvenement(e, false)));
-  document.getElementById("compteur-total").textContent = evenements.length;
-  document.getElementById("btn-tri-chrono").style.opacity = triTousMode === "chrono" ? "1" : "0.5";
-  document.getElementById("btn-tri-alpha").style.opacity = triTousMode === "alpha" ? "1" : "0.5";
-}
-
-// ---------- Ajout / édition / suppression ----------
-function genererId(){
-  return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-}
-
-function afficherMsg(id, texte, type){
-  const el = document.getElementById(id);
-  el.textContent = texte;
-  el.className = "msg " + type;
-  el.style.display = "block";
-  el.style.userSelect = "text";
-  if (type === "ok"){
-    setTimeout(() => { el.style.display = "none"; }, 6000);
-  }
-  // Les messages d'erreur/info restent affichés jusqu'à la prochaine action : le temps de les lire et de les copier.
-}
-
-document.getElementById("btn-ajouter").addEventListener("click", () => {
-  const nom = document.getElementById("champ-nom").value.trim();
-  const jour = parseInt(document.getElementById("champ-jour").value, 10) || null;
-  const mois = parseInt(document.getElementById("champ-mois").value, 10);
-  const anneeVal = document.getElementById("champ-annee").value;
-  const annee = anneeVal ? parseInt(anneeVal, 10) : null;
-  const type = document.getElementById("champ-type").value;
-  const noMail = document.getElementById("champ-no-mail").checked;
-  const idEdition = document.getElementById("champ-id-edition").value;
-
-  if (!nom){
-    afficherMsg("msg-ajout", "Le nom est obligatoire.", "err");
-    return;
-  }
-  if (jour && (jour < 1 || jour > 31)){
-    afficherMsg("msg-ajout", "Jour invalide.", "err");
-    return;
-  }
-
-  if (idEdition){
-    const evt = evenements.find(e => e.id === idEdition);
-    if (evt){
-      evt.nom = nom; evt.jour = jour; evt.mois = mois; evt.annee = annee; evt.type = type;
-      evt.incertain = !jour;
-      evt.noMail = noMail;
-    }
-    document.getElementById("champ-id-edition").value = "";
-    document.getElementById("btn-ajouter").textContent = "Ajouter";
-    afficherMsg("msg-ajout", "Événement modifié.", "ok");
-  } else {
-    evenements.push({ id: genererId(), nom, jour, mois, annee, type, incertain: !jour, noMail });
-    afficherMsg("msg-ajout", "Événement ajouté.", "ok");
-  }
-
-  document.getElementById("champ-nom").value = "";
-  document.getElementById("champ-jour").value = "";
-  document.getElementById("champ-annee").value = "";
-  document.getElementById("champ-no-mail").checked = false;
-
-  sauverEvenementsLocal();
-  rafraichir();
-});
-
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-action]");
-  if (!btn) return;
-  const id = btn.dataset.id;
-  const evt = evenements.find(ev => ev.id === id);
-  if (!evt) return;
-
-  if (btn.dataset.action === "supprimer"){
-    if (!confirm(`Supprimer « ${evt.nom} » (${evt.type}) ?`)) return;
-    evenements = evenements.filter(ev => ev.id !== id);
-    sauverEvenementsLocal();
-    rafraichir();
-  }
-
-  if (btn.dataset.action === "editer"){
-    document.getElementById("det-ajout").open = true;
-    document.getElementById("champ-nom").value = evt.nom;
-    document.getElementById("champ-jour").value = evt.jour || "";
-    document.getElementById("champ-mois").value = evt.mois;
-    document.getElementById("champ-annee").value = evt.annee || "";
-    document.getElementById("champ-type").value = evt.type;
-    document.getElementById("champ-no-mail").checked = !!evt.noMail;
-    document.getElementById("champ-id-edition").value = evt.id;
-    document.getElementById("btn-ajouter").textContent = "Enregistrer la modification";
-    window.scrollTo({top: document.getElementById("det-ajout").offsetTop - 10, behavior:"smooth"});
-  }
-});
-
-document.getElementById("btn-tri-chrono").addEventListener("click", () => {
-  triTousMode = "chrono";
-  localStorage.setItem("anniversaires_tri_tous", triTousMode);
-  rafraichir();
-});
-document.getElementById("btn-tri-alpha").addEventListener("click", () => {
-  triTousMode = "alpha";
-  localStorage.setItem("anniversaires_tri_tous", triTousMode);
-  rafraichir();
-});
-
-document.getElementById("champ-gmail-user").addEventListener("change", sauverGmailLocal);
-document.getElementById("champ-gmail-app-password").addEventListener("change", sauverGmailLocal);
-
-// ---------- Réglages GitHub ----------
-document.getElementById("btn-enregistrer-config").addEventListener("click", () => {
-  const config = {
-    owner: document.getElementById("champ-owner").value.trim(),
-    repo: document.getElementById("champ-repo").value.trim(),
-    branche: document.getElementById("champ-branche").value.trim() || "main",
-    fichier: document.getElementById("champ-fichier").value.trim() || "data/anniversaires.json",
-    token: document.getElementById("champ-token").value.trim()
-  };
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Owner, dépôt et token sont requis pour synchroniser.", "err");
-    return;
-  }
-  localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
-  afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
-  majEtatSync("en-attente");
-  // Les identifiants viennent d'être renseignés : on tente une synchro immédiate.
-  pousserVersGitHub(true);
-});
-
-document.getElementById("btn-effacer-config").addEventListener("click", () => {
-  if (!confirm("Effacer les identifiants GitHub enregistrés localement ?")) return;
-  localStorage.removeItem(CLE_CONFIG);
-  document.getElementById("champ-owner").value = "";
-  document.getElementById("champ-repo").value = "";
-  document.getElementById("champ-token").value = "";
-  afficherMsg("msg-sync", "Identifiants effacés.", "ok");
-  majEtatSync("aucune-config");
-});
-
-function lireConfig(){
-  try{ return JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}"); }
-  catch(e){ return {}; }
-}
-
-async function githubApi(url, options){
-  const config = lireConfig();
-  const opts = options || {};
-  opts.headers = Object.assign({
-    "Authorization": "Bearer " + config.token,
-    "Accept": "application/vnd.github+json"
-  }, opts.headers || {});
-  const rep = await fetch(url, opts);
-  if (!rep.ok){
-    const texte = await rep.text().catch(() => "");
-    throw new Error(`${rep.status} ${rep.statusText} — ${texte.slice(0,200)}`);
-  }
-  return rep.status === 204 ? null : rep.json();
-}
-
-function b64EncodeUtf8(str){
-  return btoa(unescape(encodeURIComponent(str)));
-}
-function b64DecodeUtf8(str){
-  return decodeURIComponent(escape(atob(str)));
-}
-
-// Envoie l'état courant (évènements + destinataires uniquement — jamais le token, la config
-// de dépôt ni les identifiants Gmail) vers GitHub. Appelée automatiquement après chaque
-// modification (via programmerSynchronisation) et par le bouton manuel « Envoyer vers GitHub ».
-async function pousserVersGitHub(silencieux){
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
-    return false;
-  }
-  if (synchronisationEnCours){
-    synchronisationEnAttente = true;
-    return false;
-  }
-  synchronisationEnCours = true;
-  majEtatSync("en-cours");
-  let succes = false;
-  try{
-    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
-    let sha = null;
-    try{
-      const existant = await githubApi(url);
-      sha = existant.sha;
-    }catch(e){ /* fichier inexistant : création */ }
-
-    const payload = {
-      destinataires,
-      maj: new Date().toISOString(),
-      evenements
-    };
-    const body = {
-      message: "Mise à jour anniversaires.json depuis l'app",
-      content: b64EncodeUtf8(JSON.stringify(payload, null, 2)),
-      branch: config.branche
-    };
-    if (sha) body.sha = sha;
-
-    await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    majEtatSync("ok");
-    if (!silencieux) afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
-    succes = true;
-  }catch(e){
-    majEtatSync("erreur");
-    if (!silencieux) afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
-    succes = false;
-  }finally{
-    synchronisationEnCours = false;
-    if (synchronisationEnAttente){
-      synchronisationEnAttente = false;
-      // D'autres changements sont arrivés pendant l'envoi : on repousse l'état le plus récent.
-      pousserVersGitHub(true);
-    }
-  }
-  return succes;
-}
-
-// Récupère évènements + destinataires depuis GitHub et remplace l'état local.
-// Appelée automatiquement au démarrage (silencieuse) si des identifiants sont enregistrés,
-// et par le bouton manuel « Récupérer depuis GitHub ».
-async function tirerDepuisGitHub(silencieux){
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
-    return false;
-  }
-  majEtatSync("en-cours");
-  try{
-    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
-    const data = await githubApi(url);
-    const contenu = JSON.parse(b64DecodeUtf8(data.content));
-    evenements = contenu.evenements || [];
-    if (contenu.destinataires && contenu.destinataires.length) destinataires = contenu.destinataires;
-    else if (contenu.destinataire) destinataires = [contenu.destinataire];
-    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
-    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
-    renderListeDestinataires();
-    rafraichir();
-    majEtatSync("ok");
-    if (!silencieux) afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
     return true;
-  }catch(e){
-    majEtatSync("erreur");
-    if (!silencieux) afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
-    return false;
   }
-}
 
-document.getElementById("btn-push").addEventListener("click", async () => {
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
-    return;
+  // ---------- Section « Réglages » repliable ----------
+  function basculerReglages(){
+    const t = document.querySelector('.section-toggle');
+    const ouvert = document.getElementById('reglages-body').classList.toggle('open');
+    t.classList.toggle('open', ouvert);
   }
-  const btn = document.getElementById("btn-push");
-  btn.disabled = true;
-  await pousserVersGitHub(false);
-  btn.disabled = false;
-});
-
-document.getElementById("btn-pull").addEventListener("click", async () => {
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
-    return;
+  function ouvrirReglages(){
+    document.getElementById('reglages-body').classList.add('open');
+    document.querySelector('.section-toggle').classList.add('open');
   }
-  if (!confirm("Remplacer la liste locale par la version de GitHub ?")) return;
-  const btn = document.getElementById("btn-pull");
-  btn.disabled = true;
-  await tirerDepuisGitHub(false);
-  btn.disabled = false;
-});
 
-// ---------- Mise à jour des secrets GitHub Actions ----------
-let promesseSodium = null;
+  // Test simple et robuste pour savoir si un fichier est du HTML :
+  // on regarde juste si le chemin se termine par .html ou .htm (toute casse).
+  // Pas besoin de télécharger ni d'analyser le contenu.
+  function estHtml(chemin){ return /\.html?$/i.test(chemin); }
 
-// Le paquet npm libsodium-wrappers ne fournit plus de script "classique" prêt à charger
-// (dist/browsers/sodium.js a disparu depuis la 0.8.x) : on importe désormais le module ES,
-// via les variantes "prêtes pour navigateur" de ces deux CDN (elles résolvent seules
-// l'import interne "libsodium" que le fichier .mjs brut ne sait pas résoudre seul).
-const SOURCES_SODIUM_ESM = [
-  "https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.8.4/+esm",
-  "https://esm.sh/libsodium-wrappers@0.8.4"
-];
+  // Même logique pour le JSON : on teste juste l'extension .json (toute casse).
+  function estJson(chemin){ return /\.json$/i.test(chemin); }
 
-function chargerSodium(){
-  if (promesseSodium) return promesseSodium;
-  promesseSodium = (async () => {
-    const echecs = [];
-    for (const url of SOURCES_SODIUM_ESM){
+  // Fichiers texte / code affichables tels quels : .txt et .py.
+  function estTexte(chemin){ return /\.(txt|py)$/i.test(chemin); }
+
+  // Type affiché dans la liste « Tous les dépôts » : extension en majuscules,
+  // ou « (sans extension) » s'il n'y en a pas.
+  function typeFichier(chemin){
+    const m = /\.([a-z0-9]+)$/i.exec(chemin);
+    return m ? m[1].toUpperCase() : '(sans extension)';
+  }
+
+  // Extensions considérées comme du contenu BINAIRE, donc non affichable
+  // comme du texte brut. Tout le reste (y compris les fichiers sans
+  // extension, comme README ou LICENSE) est traité comme du texte éditable.
+  const EXT_BINAIRES = new Set([
+    'png','jpg','jpeg','gif','svg','webp','ico','pdf','zip','gz','tar','7z','rar',
+    'mp3','wav','ogg','mp4','mov','avi','woff','woff2','ttf','otf','eot',
+    'exe','dll','so','dylib','class','jar','psd','ai','db','sqlite','bin'
+  ]);
+  function estTexteEditable(chemin){
+    const m = /\.([a-z0-9]+)$/i.exec(chemin);
+    if(!m) return true;
+    return !EXT_BINAIRES.has(m[1].toLowerCase());
+  }
+
+  function confirmer(msg){
+    return new Promise(res=>{
+      if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      const o=document.getElementById('modal-overlay'), m=document.getElementById('modal-message'),
+            c=document.getElementById('modal-confirm'), a=document.getElementById('modal-cancel');
+      m.textContent=msg;
+      function net(){ o.classList.remove('visible'); c.removeEventListener('click',ok); a.removeEventListener('click',no); o.removeEventListener('click',fond); }
+      function ok(){ net(); res(true); }
+      function no(){ net(); res(false); }
+      function fond(e){ if(e.target===o){ net(); res(false); } }
+      c.addEventListener('click',ok); a.addEventListener('click',no); o.addEventListener('click',fond);
+      setTimeout(()=>o.classList.add('visible'),120);
+    });
+  }
+
+  // Traduit une réponse HTTP GitHub en erreur claire et actionnable.
+  // On y ajoute le message brut renvoyé par l'API quand il existe.
+  async function erreurGitHub(resp, contexte){
+    let data = {};
+    try { data = await resp.json(); } catch(_){}
+    const brut = (data && data.message) ? ` (GitHub : « ${data.message} »)` : '';
+    let aide;
+    switch(resp.status){
+      case 401: aide = "token invalide ou expiré — recrée un PAT et vérifie qu'il est collé en entier"; break;
+      case 403: aide = "accès refusé — le token n'a peut-être pas la portée « repo », ou la limite de requêtes GitHub est atteinte (réessaie dans quelques minutes)"; break;
+      case 404: aide = "introuvable — vérifie le nom d'utilisateur, le nom du dépôt (et sa casse) et la branche ; pour un dépôt privé, le token doit y avoir accès"; break;
+      case 409: aide = "le dépôt est vide (aucun commit) — il n'y a aucun fichier à lister"; break;
+      case 422: aide = "requête refusée par GitHub"; break;
+      default:  aide = `erreur HTTP ${resp.status}`;
+    }
+    return new Error(`${contexte} : ${aide}.${brut}`);
+  }
+
+  // Diagnostic approfondi quand la lecture de la branche renvoie une erreur.
+  // Objectif : distinguer « branche inexistante » (dépôt accessible) de
+  // « dépôt invisible » (privé sans accès, ou inexistant), et vérifier le
+  // token, pour donner un message précis et actionnable.
+  async function diagnostiquerAcces(resp, u, r, br){
+    if(resp.status === 401){
+      return new Error("Token invalide ou expiré : GitHub ne reconnaît pas ce PAT.\n→ Recrée un token d'accès et recolle-le en entier dans Réglages.");
+    }
+    if(resp.status === 403){
+      if(resp.headers.get('X-RateLimit-Remaining') === '0'){
+        const reset = Number(resp.headers.get('X-RateLimit-Reset')||0) * 1000;
+        const quand = reset ? new Date(reset).toLocaleTimeString() : 'un moment';
+        return new Error(`Limite de requêtes GitHub atteinte.\n→ Réessaie après ${quand}.`);
+      }
+      return new Error("Accès refusé (403). Le token n'a probablement pas la portée « repo ».\n→ Recrée un token classique en cochant « repo ».");
+    }
+    if(resp.status === 409){
+      // Un dépôt sans aucun commit renvoie 409 « Git Repository is empty ».
+      const err = new Error(
+        `Le dépôt « ${u}/${r} » est vide : il ne contient aucun commit.\n`+
+        `C'est souvent un dépôt créé mais jamais utilisé — il n'y a donc rien à lister ici.\n`+
+        `→ Pour le supprimer : ouvre sa page (bouton ci-dessous), puis « Settings » → tout en bas, section « Danger Zone » → « Delete this repository ».`
+      );
+      err.urlDepot = `https://github.com/${u}/${r}`;
+      return err;
+    }
+    if(resp.status !== 404){
+      return await erreurGitHub(resp, "Lecture de la branche impossible");
+    }
+
+    // --- 404 : le dépôt lui-même, ou seulement la branche ? ---
+    let repoResp = null;
+    try{
+      repoResp = await fetch(`https://api.github.com/repos/${u}/${r}?_cb=${Date.now()}`, { headers: headers(), cache:"no-store" });
+    }catch(_){}
+
+    if(repoResp && repoResp.ok){
+      // Le dépôt EST accessible → c'est la branche qui n'existe pas.
+      const repo = await repoResp.json().catch(()=>({}));
+      let noms = [];
       try{
-        const mod = await import(/* webpackIgnore: true */ url);
-        const sodium = mod.default || mod;
-        if (sodium && sodium.ready){
-          await sodium.ready;
-          return sodium;
+        const bResp = await fetch(`https://api.github.com/repos/${u}/${r}/branches?per_page=100`, { headers: headers() });
+        if(bResp.ok) noms = (await bResp.json()).map(b=>b.name);
+      }catch(_){}
+
+      // Meilleure candidate : la branche par défaut si elle existe, sinon la
+      // première branche existante (cas fréquent : une seule branche « master »).
+      let candidate = repo.default_branch || null;
+      if(noms.length && (!candidate || !noms.includes(candidate))) candidate = noms[0];
+
+      const parDefaut = repo.default_branch ? `\nBranche par défaut : « ${repo.default_branch} ».` : '';
+      const dispo = noms.length ? `\nBranches existantes : ${noms.slice(0,12).map(n=>`« ${n} »`).join(', ')}${noms.length>12?'…':''}.` : '';
+      const err = new Error(
+        `Le dépôt « ${u}/${r} » existe${repo.private?' (privé)':''} et est accessible avec ce token, `+
+        `mais la branche « ${br} » est introuvable.${parDefaut}${dispo}`+
+        (candidate ? '' : `\n→ Corrige le nom de la branche dans Réglages.`)
+      );
+      if(candidate) err.brancheCandidate = candidate;   // exploité pour proposer un bouton de correction
+      return err;
+    }
+
+    // --- Le dépôt n'est pas visible avec ce token : privé sans accès, ou inexistant. ---
+    // On interroge le token (validité + portées) pour trancher au mieux.
+    let login = null, scopes = null, tokenValide = true;
+    try{
+      const uResp = await fetch(`https://api.github.com/user?_cb=${Date.now()}`, { headers: headers(), cache:"no-store" });
+      if(uResp.status === 401) tokenValide = false;
+      else if(uResp.ok){
+        login = (await uResp.json()).login;
+        scopes = uResp.headers.get('X-OAuth-Scopes'); // null pour un token « fine-grained »
+      }
+    }catch(_){}
+
+    if(!tokenValide){
+      return new Error("Token invalide ou expiré : GitHub ne reconnaît pas ce PAT.\n→ Recrée un token d'accès et recolle-le en entier dans Réglages.");
+    }
+
+    // Token classique SANS portée « repo » → il ne peut pas voir les dépôts privés.
+    if(scopes !== null && !/(^|,\s*)repo(\s*,|$)/.test(scopes)){
+      return new Error(
+        `Le dépôt « ${u}/${r} » est introuvable avec ce token.\n`+
+        `Ce token classique n'a pas la portée « repo » (portées actuelles : ${scopes || 'aucune'}), `+
+        `il ne peut donc PAS voir les dépôts privés.\n`+
+        `→ Si « ${u}/${r} » est privé, recrée un token classique en cochant « repo » `+
+        `(ou un token « fine-grained » incluant ce dépôt).`
+      );
+    }
+
+    // Token a priori suffisant (repo coché, ou fine-grained) : soit le dépôt est
+    // privé et ce token précis n'y a pas accès, soit il n'existe pas. GitHub
+    // renvoie « Not Found » dans les deux cas.
+    const qui = login ? ` (connecté en tant que « ${login} »)` : '';
+    return new Error(
+      `Le dépôt « ${u}/${r} » est introuvable avec ce token${qui}.\n`+
+      `Deux causes possibles :\n`+
+      `• le dépôt est privé et ce token n'y a pas accès ;\n`+
+      `• le nom (ou sa casse) est erroné, ou le dépôt n'existe pas.\n`+
+      `GitHub répond « Not Found » dans les deux cas : il ne confirme jamais l'existence d'un dépôt privé qu'on n'a pas le droit de voir.\n`+
+      `→ Token « fine-grained » : vérifie que « ${u}/${r} » figure dans « Repository access ».\n`+
+      `→ Vérifie que ${login ? `« ${login} »` : 'ton compte'} est propriétaire ou collaborateur du dépôt.`
+    );
+  }
+
+  // Récupère l'arbre complet du dépôt (chemins EXACTS, casse respectée).
+  async function getArbre(){
+    const u=val('user'), r=val('repo'), br=val('branch');
+    // 1) tête de branche — SANS CACHE, avec anti-cache dans l'URL.
+    // C'est le point critique : si Safari nous sert une ancienne valeur, on
+    // construit le commit sur un mauvais parent et GitHub répond "not a fast
+    // forward". On force donc une lecture réseau fraîche à chaque appel.
+    const refUrl = `https://api.github.com/repos/${u}/${r}/git/ref/heads/${br}?_cb=${Date.now()}`;
+    const refResp = await fetch(refUrl, { headers: headers(), cache: "no-store" });
+    if(!refResp.ok) throw await diagnostiquerAcces(refResp, u, r, br);
+    const ref = await refResp.json();
+    const headSha = ref.object.sha;
+    // 2) commit -> arbre (objets immuables, adressés par SHA : le cache est sans risque ici)
+    const cResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/commits/${headSha}`, { headers: headers() });
+    if(!cResp.ok) throw await erreurGitHub(cResp, "Lecture du commit impossible");
+    const commit = await cResp.json();
+    // 3) arbre récursif
+    const tResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/trees/${commit.tree.sha}?recursive=1`, { headers: headers() });
+    if(!tResp.ok) throw await erreurGitHub(tResp, "Lecture de l'arbre impossible");
+    const tree = await tResp.json();
+    return { headSha, tree };
+  }
+
+  // Comme getArbre(), mais paramétrable sur un dépôt/branche arbitraires
+  // (utilisé par « Lister tous les dépôts », qui parcourt chaque dépôt de
+  // l'utilisateur avec sa propre branche par défaut).
+  async function getArbrePour(u, r, br){
+    const refUrl = `https://api.github.com/repos/${u}/${r}/git/ref/heads/${br}?_cb=${Date.now()}`;
+    const refResp = await fetch(refUrl, { headers: headers(), cache: "no-store" });
+    if(!refResp.ok) throw await diagnostiquerAcces(refResp, u, r, br);
+    const ref = await refResp.json();
+    const headSha = ref.object.sha;
+    const cResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/commits/${headSha}`, { headers: headers() });
+    if(!cResp.ok) throw await erreurGitHub(cResp, "Lecture du commit impossible");
+    const commit = await cResp.json();
+    const tResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/trees/${commit.tree.sha}?recursive=1`, { headers: headers() });
+    if(!tResp.ok) throw await erreurGitHub(tResp, "Lecture de l'arbre impossible");
+    const tree = await tResp.json();
+    return { headSha, tree };
+  }
+
+  // Nombre de versions (commits) d'un fichier donné dans un dépôt : on lit
+  // juste l'en-tête Link de la première page (per_page=1) et on prend le
+  // numéro de la dernière page — c'est le nombre total de commits touchant
+  // ce chemin, sans avoir à tous les télécharger.
+  async function compterVersions(u, r, chemin, br){
+    const url = `https://api.github.com/repos/${u}/${r}/commits?path=${encodeURIComponent(chemin)}&sha=${encodeURIComponent(br)}&per_page=1`;
+    const resp = await fetch(url, { headers: headers() });
+    if(!resp.ok) return null;
+    const link = resp.headers.get('Link');
+    if(link){
+      const m = /[?&]page=(\d+)>;\s*rel="last"/.exec(link);
+      if(m) return parseInt(m[1], 10);
+    }
+    // Pas d'en-tête « last » : soit 0, soit 1 commit touche ce fichier.
+    const data = await resp.json().catch(()=>[]);
+    return Array.isArray(data) ? data.length : null;
+  }
+
+  // Comme compterVersions(), mais pour l'historique d'un gist entier (un gist
+  // n'a pas d'historique par fichier : une version = une modification du gist,
+  // quel que soit le fichier touché).
+  async function compterVersionsGist(id){
+    const url = `https://api.github.com/gists/${id}/commits?per_page=1`;
+    const resp = await fetch(url, { headers: headers() });
+    if(!resp.ok) return null;
+    const link = resp.headers.get('Link');
+    if(link){
+      const m = /[?&]page=(\d+)>;\s*rel="last"/.exec(link);
+      if(m) return parseInt(m[1], 10);
+    }
+    const data = await resp.json().catch(()=>[]);
+    return Array.isArray(data) ? data.length : null;
+  }
+
+  let dernierArbre = null;
+
+  async function lister(){
+    if(!verifier()) return;
+    // On repart d'une liste vide : les fichiers du dépôt précédent ne doivent
+    // pas rester affichés, surtout si le nouveau chargement échoue.
+    document.getElementById('files-card').style.display='none';
+    document.getElementById('files-list').innerHTML='';
+    dernierArbre = null;
+    message("Chargement des fichiers…","success");
+    try{
+      const { headSha, tree } = await getArbre();
+      dernierArbre = { headSha, entries: tree.tree };
+      if(tree.truncated){
+        message("⚠️ Le dépôt est très gros et la liste est tronquée. Cet outil ne convient pas dans ce cas.","error");
+      }
+      const blobs = tree.tree.filter(e=>e.type==='blob');
+
+      // Repérage des doublons de casse
+      const parMinuscule = {};
+      blobs.forEach(e=>{ const k=e.path.toLowerCase(); (parMinuscule[k]=parMinuscule[k]||[]).push(e.path); });
+      const estDoublon = p => parMinuscule[p.toLowerCase()].length > 1;
+
+      const list = document.getElementById('files-list');
+      list.innerHTML = "";
+      blobs.sort((a,b)=>a.path.localeCompare(b.path)).forEach(e=>{
+        const div=document.createElement('div');
+        div.className='file-item'+(estDoublon(e.path)?' dup':'');
+        // Ligne du haut : le nom du fichier, sur toute la largeur (lisible,
+        // plus jamais écrasé). S'il contient du texte, un tap dessus ouvre
+        // directement le contenu en plein écran.
+        const rowTop=document.createElement('div'); rowTop.className='file-row-top';
+        const editable = estTexteEditable(e.path);
+        const name=document.createElement('div');
+        name.className='file-name'+(editable?' cliquable':'');
+        name.textContent=e.path;
+        if(editable){ name.title='Voir le contenu'; name.addEventListener('click', ()=>voirTexte(e.path, e.sha)); }
+        rowTop.appendChild(name);
+        div.appendChild(rowTop);
+        // Ligne du bas : pastille de type à gauche (cliquable seulement pour le
+        // HTML, qui ouvre l'aperçu rendu comme dans un navigateur), actions à droite.
+        const actions=document.createElement('div'); actions.className='file-actions';
+        if(estHtml(e.path)){
+          const badge=document.createElement('button');
+          badge.type='button'; badge.className='type-badge clickable'; badge.textContent='HTML';
+          badge.title='Aperçu (rendu navigateur)';
+          badge.addEventListener('click', ()=>apercu(e.path, e.sha));
+          actions.appendChild(badge);
+        } else {
+          const badge=document.createElement('span');
+          badge.className='type-badge'; badge.textContent=typeFichier(e.path);
+          actions.appendChild(badge);
         }
-        echecs.push(`${new URL(url).hostname} : module chargé mais incomplet`);
-      }catch(e){
-        echecs.push(`${new URL(url).hostname} : ${e.message}`);
+        const droite=document.createElement('div'); droite.className='file-actions-right';
+        // Fichier JSON : bouton d'affichage de la structure (clés et types).
+        if(estJson(e.path)){
+          const st=document.createElement('button'); st.className='btn-json'; st.textContent='{ } Structure';
+          st.addEventListener('click', ()=>structureJson(e.path, e.sha));
+          droite.appendChild(st);
+        }
+        const btn=document.createElement('button'); btn.className='btn-del'; btn.textContent='Supprimer';
+        btn.addEventListener('click', ()=>supprimer(e.path, e.sha));
+        droite.appendChild(btn);
+        actions.appendChild(droite);
+        div.appendChild(actions);
+        list.appendChild(div);
+      });
+      // Le listing a réussi → la branche est bonne : on la mémorise pour ce dépôt,
+      // avec le nombre de fichiers (affiché ensuite dans la liste déroulante).
+      ecrireDepotInfo(val('user'), val('repo'), { branch: val('branch'), nbFichiers: blobs.length });
+      document.getElementById('files-card').style.display='block';
+      const nbDup = Object.values(parMinuscule).filter(a=>a.length>1).length;
+      message(nbDup>0
+        ? `${blobs.length} fichier(s). ⚠️ ${nbDup} nom(s) en double par la casse — encadré(s) en orange.`
+        : `${blobs.length} fichier(s). Aucun doublon de casse détecté.`,
+        nbDup>0 ? "error" : "success");
+    }catch(err){
+      // La liste reste masquée/vide (on l'a réinitialisée en début d'appel).
+      document.getElementById('files-card').style.display='none';
+      document.getElementById('files-list').innerHTML='';
+      dernierArbre = null;
+      // Une TypeError de fetch = pas de réseau / requête bloquée, pas une réponse GitHub.
+      const txt = (err instanceof TypeError)
+        ? "Impossible de contacter GitHub. Vérifie ta connexion Internet, puis réessaie."
+        : err.message;
+      message("❌ "+txt, "error");
+      // Cas « branche introuvable mais dépôt accessible » : on propose de
+      // basculer directement sur la branche existante détectée.
+      if(err.brancheCandidate){
+        ajouterBoutonStatut(`Utiliser la branche « ${err.brancheCandidate} »`, ()=>{
+          document.getElementById('branch').value = err.brancheCandidate;
+          sauverChamps();
+          lister();
+        });
+      }
+      // Cas « dépôt vide » : on propose d'ouvrir sa page GitHub (pour le supprimer, etc.).
+      if(err.urlDepot){
+        ajouterBoutonStatut("Ouvrir la page du dépôt", ()=>{
+          window.open(err.urlDepot, '_blank', 'noopener');
+        });
       }
     }
-    promesseSodium = null; // pour permettre une nouvelle tentative au clic suivant
-    throw new Error("Impossible de charger la librairie de chiffrement (" + echecs.join(" ; ") + ").");
-  })();
-  return promesseSodium;
-}
-
-async function chiffrerPourGitHub(cleGitHubBase64, texteClair){
-  const sodium = await chargerSodium();
-  const cleBin = sodium.from_base64(cleGitHubBase64, sodium.base64_variants.ORIGINAL);
-  const secretBin = sodium.from_string(texteClair);
-  const chiffre = sodium.crypto_box_seal(secretBin, cleBin);
-  return sodium.to_base64(chiffre, sodium.base64_variants.ORIGINAL);
-}
-
-async function poserSecretGitHub(config, nomSecret, valeur, cleInfo){
-  const encryptedValue = await chiffrerPourGitHub(cleInfo.key, valeur);
-  await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/${nomSecret}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ encrypted_value: encryptedValue, key_id: cleInfo.key_id })
-  });
-}
-
-document.getElementById("btn-maj-secrets").addEventListener("click", async () => {
-  const config = lireConfig();
-  const gmailUser = document.getElementById("champ-gmail-user").value.trim();
-  const gmailPass = document.getElementById("champ-gmail-app-password").value.trim();
-
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-secrets", "Renseigne et enregistre d'abord owner/repo/token dans les réglages.", "err");
-    return;
-  }
-  if (!gmailUser || !gmailPass){
-    afficherMsg("msg-secrets", "Renseigne l'adresse Gmail et le mot de passe d'application.", "err");
-    return;
   }
 
-  const btn = document.getElementById("btn-maj-secrets");
-  btn.disabled = true;
-  sauverGmailLocal();
-  afficherMsg("msg-secrets", "⏳ Chargement de la librairie de chiffrement…", "info");
+  // ---------- « Lister tous les dépôts et gists » ----------
+  // Parcourt tous les dépôts ET tous les gists de l'utilisateur, affiche pour
+  // chacun un bloc repliable, et pour chaque fichier : nom, type (extension)
+  // et nombre de versions (commits) présentes sur GitHub.
 
-  try{
-    await chargerSodium();
-    afficherMsg("msg-secrets", "⏳ Envoi des secrets chiffrés vers GitHub…", "info");
-    const cleInfo = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/public-key`);
-    await poserSecretGitHub(config, "GMAIL_USER", gmailUser, cleInfo);
-    await poserSecretGitHub(config, "GMAIL_APP_PASSWORD", gmailPass, cleInfo);
-    afficherMsg("msg-secrets", "✅ Secrets GMAIL_USER et GMAIL_APP_PASSWORD mis à jour sur GitHub.", "ok");
-  }catch(e){
-    const indice = e.message.includes("chiffrement")
-      ? " Réessaie dans quelques secondes (problème réseau probable)."
-      : " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique, ou permission « Secrets » en Read and write pour un token fin).";
-    afficherMsg("msg-secrets", "❌ Échec : " + e.message + indice, "err");
-  }finally{
-    btn.disabled = false;
+  // Références de chaque bloc affiché (dépôt ou gist), pour permettre au
+  // bouton « Tout ouvrir / Tout fermer » d'agir sur tous les blocs à la fois.
+  let blocsDepots = [];
+
+  // Construit la structure HTML commune (en-tête repliable + corps vide)
+  // utilisée aussi bien pour un dépôt que pour un gist.
+  function creerBlocUI(nomAffiche, badge){
+    const bloc = document.createElement('div');
+    bloc.className = 'repo-bloc';
+
+    const entete = document.createElement('div');
+    entete.className = 'repo-entete';
+    const nomSpan = document.createElement('span');
+    nomSpan.className = 'repo-nom';
+    nomSpan.textContent = nomAffiche + (badge ? ' ' + badge : '');
+    const compteSpan = document.createElement('span');
+    compteSpan.className = 'repo-compte';
+    entete.appendChild(nomSpan);
+    const droite = document.createElement('span');
+    droite.style.display='flex'; droite.style.alignItems='center';
+    droite.appendChild(compteSpan);
+    const chevron = document.createElement('span');
+    chevron.className = 'repo-chevron'; chevron.textContent = '▼';
+    droite.appendChild(chevron);
+    entete.appendChild(droite);
+    bloc.appendChild(entete);
+
+    const corps = document.createElement('div');
+    corps.className = 'repo-fichiers';
+    bloc.appendChild(corps);
+
+    return { bloc, entete, corps, chevron, compteSpan };
   }
-});
 
-// ---------- Déclenchement générique d'un run workflow_dispatch, avec sondage ----------
-const NOM_FICHIER_WORKFLOW = "verif-anniversaires.yml";
+  async function listerTout(){
+    if(!val('token')){ ouvrirReglages(); message("Saisis d'abord ton token dans Réglages.","error"); return; }
+    const carte = document.getElementById('tous-card');
+    const zone = document.getElementById('tous-list');
+    carte.style.display='block';
+    zone.innerHTML = '';
+    blocsDepots = [];
+    reinitialiserBoutonToutOuvrir();
+    zone.scrollIntoView({behavior:'smooth', block:'nearest'});
+    message("Chargement de la liste des dépôts…","success");
 
-function afficherStatut(idElement, texte, classe){
-  const el = document.getElementById(idElement);
-  el.style.display = "block";
-  el.className = "msg " + classe;
-  el.innerHTML = texte;
-}
+    const ok = await chargerDepots();
+    if(!ok){ carte.style.display='none'; return; }
 
-function attendre(ms){ return new Promise(r => setTimeout(r, ms)); }
+    // Un bloc repliable par dépôt, contenu chargé à la demande (au premier
+    // dépli, manuel ou via « Tout ouvrir ») pour ne pas interroger l'API sur
+    // des dépôts qu'on ne consulte pas.
+    depotsCharges.forEach(d=>{
+      const { bloc, entete, corps, chevron, compteSpan } = creerBlocUI(d.name, d.prive ? '🔒' : '');
+      const item = { type:'repo', d, entete, corps, chevron, compteSpan, charge:false };
+      entete.addEventListener('click', ()=>basculerBlocDepot(item));
+      blocsDepots.push(item);
+      zone.appendChild(bloc);
+    });
 
-async function trouverRunDeclenche(config, aprèsISO){
-  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/actions/workflows/${NOM_FICHIER_WORKFLOW}/runs?event=workflow_dispatch&per_page=5`;
-  const data = await githubApi(url);
-  const seuil = new Date(aprèsISO).getTime() - 5000; // marge de 5 s pour les décalages d'horloge
-  const runs = (data.workflow_runs || []).filter(r => new Date(r.created_at).getTime() >= seuil);
-  if (runs.length === 0) return null;
-  runs.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-  return runs[0];
-}
+    // Puis les gists, sous un même intitulé « Gists ». Un gist n'a pas de
+    // branche : ses fichiers sont lus directement depuis la réponse de
+    // l'API (pas besoin de reconstruire un arbre Git).
+    message("Chargement de la liste des gists…","success");
+    const gists = await chargerGists();
 
-/**
- * Déclenche le workflow avec les inputs donnés, attend son démarrage puis sa fin.
- * Retourne { statut: "timeout_demarrage" | "timeout_execution" | "termine", run, detail }.
- * Publie sa progression dans idStatut au fur et à mesure.
- */
-async function declencherEtSuivreWorkflow(config, inputs, idStatut){
-  const avantDeclenchement = new Date().toISOString();
+    if(gists && gists.length > 0){
+      const titreGists = document.createElement('div');
+      titreGists.className = 'hint';
+      titreGists.style.cssText = 'margin:16px 0 8px; font-weight:600; color:#6e6e73;';
+      titreGists.textContent = `Gists (${gists.length})`;
+      zone.appendChild(titreGists);
 
-  await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/workflows/${NOM_FICHIER_WORKFLOW}/dispatches`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ref: config.branche, inputs })
-  });
+      gists.forEach(g=>{
+        const nomAffiche = (g.description && g.description.trim())
+          ? g.description.trim()
+          : (Object.keys(g.files||{})[0] || g.id);
+        const { bloc, entete, corps, chevron, compteSpan } = creerBlocUI(nomAffiche, g.public ? '' : '🔒');
+        const item = { type:'gist', g, entete, corps, chevron, compteSpan, charge:false };
+        entete.addEventListener('click', ()=>basculerBlocDepot(item));
+        blocsDepots.push(item);
+        zone.appendChild(bloc);
+      });
+    }
 
-  afficherStatut(idStatut, "⏳ Workflow déclenché, en attente de son démarrage sur GitHub…", "info");
+    if(depotsCharges.length === 0 && (!gists || gists.length === 0)){
+      zone.innerHTML = '<p class="hint">Aucun dépôt ni gist trouvé pour ce token.</p>';
+      message("Aucun dépôt ni gist trouvé.","success");
+      return;
+    }
 
-  let run = null;
-  for (let tentative = 0; tentative < 20 && !run; tentative++){
-    await attendre(3000);
-    run = await trouverRunDeclenche(config, avantDeclenchement);
+    const nbGists = gists ? gists.length : 0;
+    message(`${depotsCharges.length} dépôt(s) et ${nbGists} gist(s). Touche un nom (ou « Tout ouvrir ») pour afficher ses fichiers.`,"success");
   }
-  if (!run) return { statut: "timeout_demarrage" };
 
-  afficherStatut(idStatut, `⏳ Run détecté (#${run.run_number}), exécution en cours…`, "info");
-
-  let statutFinal = null;
-  for (let tentative = 0; tentative < 40; tentative++){
-    await attendre(3000);
-    const detail = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/runs/${run.id}`);
-    if (detail.status === "completed"){
-      statutFinal = detail;
-      break;
+  // Ouvre/ferme un seul bloc (clic sur son nom), en chargeant son contenu au besoin.
+  async function basculerBlocDepot(item){
+    const ouvre = !item.corps.classList.contains('open');
+    item.corps.classList.toggle('open', ouvre);
+    item.chevron.classList.toggle('open', ouvre);
+    if(ouvre && !item.charge){
+      item.charge = true;
+      await chargerContenuBloc(item);
     }
   }
-  if (!statutFinal) return { statut: "timeout_execution", run };
 
-  return { statut: "termine", run, detail: statutFinal };
-}
-
-// ---------- Test de bout en bout ----------
-document.getElementById("btn-test-e2e").addEventListener("click", async () => {
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherStatut("statut-test", "⚠️ Renseigne et enregistre d'abord owner/repo/token dans les réglages.", "err");
-    return;
+  // Dispatch vers le bon chargeur selon qu'il s'agit d'un dépôt ou d'un gist.
+  async function chargerContenuBloc(item){
+    if(item.type === 'gist') await chargerFichiersGist(item.g, item.corps, item.compteSpan);
+    else await chargerFichiersDepot(item.d, item.corps, item.compteSpan);
   }
 
-  const btn = document.getElementById("btn-test-e2e");
-  btn.disabled = true;
-  afficherStatut("statut-test", "⏳ Déclenchement du workflow…", "info");
+  // Remet le bouton « Tout ouvrir / Tout fermer » à son état initial.
+  function reinitialiserBoutonToutOuvrir(){
+    const btn = document.getElementById('btn-tout-ouvrir');
+    btn.textContent = 'Tout ouvrir';
+    btn.dataset.ouvert = '0';
+  }
 
-  try{
-    const resultat = await declencherEtSuivreWorkflow(config, { forcer_test: "true" }, "statut-test");
+  // Ouvre (ou ferme) tous les blocs (dépôts + gists) d'un coup. À l'ouverture,
+  // charge séquentiellement ceux pas encore consultés (pour rester
+  // raisonnable sur le nombre de requêtes envoyées en parallèle à l'API GitHub).
+  async function basculerToutOuvrir(){
+    if(blocsDepots.length === 0) return;
+    const btn = document.getElementById('btn-tout-ouvrir');
+    const doitOuvrir = btn.dataset.ouvert !== '1';
 
-    if (resultat.statut === "timeout_demarrage"){
-      afficherStatut("statut-test", "❌ Le run n'est pas apparu après 60 s. Vérifie manuellement l'onglet Actions du dépôt.", "err");
-    } else if (resultat.statut === "timeout_execution"){
-      afficherStatut("statut-test", `⏳ Toujours en cours après 2 min. <a href="${resultat.run.html_url}" target="_blank" style="color:#9cc0ff;">Voir sur GitHub</a>`, "info");
-    } else if (resultat.detail.conclusion === "success"){
-      afficherStatut("statut-test", `✅ Test réussi ! Vérifie ta boîte mail (et les spams). <a href="${resultat.detail.html_url}" target="_blank" style="color:#9cc0ff;">Voir les logs</a>`, "ok");
+    btn.disabled = true;
+    if(doitOuvrir){
+      btn.dataset.ouvert = '1';
+      btn.textContent = 'Tout fermer';
+      for(let i=0; i<blocsDepots.length; i++){
+        const item = blocsDepots[i];
+        item.corps.classList.add('open');
+        item.chevron.classList.add('open');
+        if(!item.charge){
+          const nom = item.type === 'gist' ? (item.g.description || item.g.id) : item.d.name;
+          message(`Chargement des fichiers… (${i+1}/${blocsDepots.length} : ${nom})`,"success");
+          item.charge = true;
+          await chargerContenuBloc(item);
+        }
+      }
+      message(`Tous les éléments (${blocsDepots.length}) sont ouverts.`,"success");
     } else {
-      afficherStatut("statut-test", `❌ Le workflow a échoué (${resultat.detail.conclusion}). <a href="${resultat.detail.html_url}" target="_blank" style="color:#ff8a80;">Voir les logs sur GitHub</a> pour le détail (souvent : secrets GMAIL_USER / GMAIL_APP_PASSWORD).`, "err");
+      btn.dataset.ouvert = '0';
+      btn.textContent = 'Tout ouvrir';
+      blocsDepots.forEach(item=>{
+        item.corps.classList.remove('open');
+        item.chevron.classList.remove('open');
+      });
     }
-
-  }catch(e){
-    afficherStatut("statut-test", "❌ Erreur : " + e.message, "err");
-  }finally{
     btn.disabled = false;
   }
-});
 
-// ---------- Diagnostic Gmail ----------
-document.getElementById("btn-diag-gmail").addEventListener("click", async () => {
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherStatut("statut-diag-gmail", "⚠️ Renseigne et enregistre d'abord owner/repo/token dans les réglages.", "err");
-    return;
-  }
-
-  const btn = document.getElementById("btn-diag-gmail");
-  btn.disabled = true;
-  afficherStatut("statut-diag-gmail", "⏳ Déclenchement du diagnostic…", "info");
-
-  try{
-    const resultat = await declencherEtSuivreWorkflow(config, { diagnostiquer_gmail: "true" }, "statut-diag-gmail");
-
-    if (resultat.statut === "timeout_demarrage"){
-      afficherStatut("statut-diag-gmail", "❌ Le run n'est pas apparu après 60 s. Vérifie manuellement l'onglet Actions du dépôt.", "err");
-    } else if (resultat.statut === "timeout_execution"){
-      afficherStatut("statut-diag-gmail", `⏳ Toujours en cours après 2 min. <a href="${resultat.run.html_url}" target="_blank" style="color:#9cc0ff;">Voir sur GitHub</a>`, "info");
-    } else {
-      // Le diagnostic ne "réussit" ou n'"échoue" pas au sens propre — on renvoie toujours vers les logs, qui contiennent l'analyse détaillée.
-      afficherStatut("statut-diag-gmail", `🔍 Diagnostic terminé. <a href="${resultat.detail.html_url}" target="_blank" style="color:#9cc0ff;">Voir le détail dans les logs GitHub</a> (étape « Envoyer le rappel si nécessaire ») — aucune information sensible n'y est exposée en clair.`, "info");
+  // Récupère tous les gists de l'utilisateur (les siens, publics et privés).
+  async function chargerGists(){
+    try{
+      const gists = [];
+      for(let page=1; page<=10; page++){
+        const url = `https://api.github.com/gists?per_page=100&page=${page}&_cb=${Date.now()}`;
+        const resp = await fetch(url, { headers: headers(), cache:"no-store" });
+        if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||resp.status); }
+        const lot = await resp.json();
+        gists.push(...lot);
+        if(lot.length < 100) break;
+      }
+      return gists;
+    }catch(err){
+      message("Impossible de charger les gists : "+err.message,"error");
+      return null;
     }
-
-  }catch(e){
-    afficherStatut("statut-diag-gmail", "❌ Erreur : " + e.message, "err");
-  }finally{
-    btn.disabled = false;
   }
-});
 
-// ---------- Historique de version ----------
-document.getElementById("badge-version").addEventListener("click", () => {
-  const liste = document.getElementById("liste-historique");
-  liste.innerHTML = HISTORIQUE.map(h => `<li><strong>${h.v}</strong> — ${escHtml(h.note)}</li>`).join("");
-  document.getElementById("panneau-historique").style.display = "block";
-});
-document.getElementById("btn-ferme-historique").addEventListener("click", () => {
-  document.getElementById("panneau-historique").style.display = "none";
-});
-
-// ---------- Import initial (si aucune donnée locale, ni identifiants GitHub) ----------
-async function importerDonneesInitiales(){
-  if (evenements.length > 0) return;
-  try{
-    const rep = await fetch("data/anniversaires.json");
-    if (!rep.ok) return;
-    const data = await rep.json();
-    evenements = data.evenements || [];
-    if (data.destinataires && data.destinataires.length) destinataires = data.destinataires;
-    else if (data.destinataire) destinataires = [data.destinataire];
-    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
-    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
-    renderListeDestinataires();
-  }catch(e){ /* pas de fichier local co-hébergé : pas grave, liste vide */ }
-}
-
-// ---------- Démarrage ----------
-(async function demarrer(){
-  chargerLocal();
-  rafraichir();
-
-  const config = lireConfig();
-  if (config.owner && config.repo && config.token){
-    // Des identifiants sont enregistrés : GitHub fait foi, on récupère silencieusement
-    // la dernière version avant d'afficher (en gardant les données locales en secours si ça échoue).
-    await tirerDepuisGitHub(true);
-  } else {
-    majEtatSync("aucune-config");
-    await importerDonneesInitiales();
-    rafraichir();
+  // Copie robuste dans le presse-papier (avec repli sur execCommand, utile
+  // sur iOS/Safari quand navigator.clipboard échoue ou est indisponible,
+  // par ex. hors contexte sécurisé).
+  function copierTexte(texte){
+    return new Promise(resolve=>{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(texte).then(()=>resolve(true)).catch(()=>resolve(repliCopie(texte)));
+      } else {
+        resolve(repliCopie(texte));
+      }
+    });
   }
-})();
+  function repliCopie(texte){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = texte;
+      ta.style.position='fixed'; ta.style.left='-9999px'; ta.style.top='0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(_){ return false; }
+  }
+
+  // Retour visuel bref « ✓ » sur un bouton après une action réussie.
+  function feedbackBouton(btn, contenuNormal){
+    btn.classList.add('copie');
+    btn.textContent = '✓';
+    setTimeout(()=>{ btn.classList.remove('copie'); btn.textContent = contenuNormal; }, 1500);
+  }
+
+  // URL brute (raw) d'un fichier de gist, exploitable directement depuis une
+  // page HTML (balise <script src="…">, <link>, fetch(), <img src="…">, etc.).
+  // Sans SHA de commit dans l'URL : elle pointe donc toujours vers la
+  // dernière version du fichier.
+  function lienBrutGist(g, filename){
+    const owner = (g.owner && g.owner.login) ? g.owner.login : val('user');
+    return `https://gist.githubusercontent.com/${owner}/${g.id}/raw/${encodeURIComponent(filename)}`;
+  }
+
+  async function copierLienGist(g, filename, btn){
+    const url = lienBrutGist(g, filename);
+    const ok = await copierTexte(url);
+    if(ok) feedbackBouton(btn, '🔗');
+    message(ok
+      ? `Lien copié dans le presse-papier :\n${url}`
+      : `Copie automatique impossible — copie ce lien manuellement :\n${url}`,
+      ok ? "success" : "error");
+  }
+
+  // Nom de fichier inséré en tête de ligne dans la vue « Tous les dépôts » :
+  // pour un fichier de texte éditable, un tap dessus l'ouvre en plein écran
+  // (contenu brut) avec un bouton Fermer, comme dans la liste d'un seul dépôt.
+  // `voirFn` est déjà liée aux bons paramètres (dépôt ou gist).
+  function creerNomRf(nomFichier, voirFn){
+    const editable = estTexteEditable(nomFichier);
+    const nom = document.createElement('span');
+    nom.className = 'rf-nom' + (editable ? ' cliquable' : '');
+    nom.textContent = nomFichier;
+    if(editable){ nom.title = 'Voir le contenu'; nom.addEventListener('click', voirFn); }
+    return nom;
+  }
+
+  // Pastille de type : pour un fichier HTML, un tap dessus ouvre l'aperçu
+  // rendu comme dans un navigateur. Pour les autres types, elle reste une
+  // simple étiquette, inchangée. `labelSecours` sert pour les fichiers de
+  // gist sans extension (le langage détecté par GitHub).
+  function creerBadgeRf(nomFichier, labelSecours, apercuFn){
+    if(estHtml(nomFichier)){
+      const badge = document.createElement('button');
+      badge.type='button'; badge.className='type-badge clickable'; badge.textContent='HTML';
+      badge.title = 'Aperçu (rendu navigateur)';
+      badge.addEventListener('click', apercuFn);
+      return badge;
+    }
+    const badge = document.createElement('span');
+    badge.className='type-badge';
+    const t = typeFichier(nomFichier);
+    badge.textContent = (t === '(sans extension)' && labelSecours) ? labelSecours.toUpperCase() : t;
+    return badge;
+  }
+
+  // Charge et affiche, dans `corps`, la liste des fichiers d'un gist avec leur
+  // type et le nombre de versions du gist (un gist n'a qu'un seul historique,
+  // commun à tous ses fichiers — une seule requête suffit donc, contrairement
+  // aux dépôts où chaque fichier a son propre historique).
+  // Ajoute le bouton { } Structure (.json) à une ligne `rf-item`.
+  // `structureFn` est déjà liée aux bons paramètres (dépôt ou gist).
+  function ajouterBoutonsContenu(ligne, nomFichier, structureFn){
+    if(estJson(nomFichier)){
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='btn-json-mini'; btn.textContent='{ }';
+      btn.title = 'Voir la structure';
+      btn.addEventListener('click', structureFn);
+      ligne.appendChild(btn);
+    }
+  }
+
+  async function chargerFichiersGist(g, corps, compteSpan){
+    corps.innerHTML = '<div class="repo-progres">Chargement…</div>';
+    try{
+      const fichiers = Object.values(g.files || {});
+      compteSpan.textContent = `(${fichiers.length})`;
+
+      if(fichiers.length === 0){
+        corps.innerHTML = '<div class="repo-erreur" style="color:#86868b;">Gist vide.</div>';
+        return;
+      }
+
+      corps.innerHTML = '';
+      const progres = document.createElement('div');
+      progres.className = 'repo-progres';
+      progres.textContent = 'Analyse des versions…';
+      corps.appendChild(progres);
+
+      const nbVersions = await compterVersionsGist(g.id);
+      const texteVersions = (nbVersions===null) ? '?' : (nbVersions===1 ? '1 version' : `${nbVersions} versions`);
+
+      fichiers.sort((a,b)=>a.filename.localeCompare(b.filename)).forEach(f=>{
+        const ligne = document.createElement('div');
+        ligne.className = 'rf-item';
+        const rowTop = document.createElement('div'); rowTop.className = 'rf-row-top';
+        const nom = creerNomRf(f.filename, ()=>voirTexteGist(g.id, f.filename));
+        rowTop.appendChild(nom);
+        const rowBottom = document.createElement('div'); rowBottom.className = 'rf-row-bottom';
+        const type = creerBadgeRf(f.filename, f.language, ()=>apercuGist(g.id, f.filename));
+        const versions = document.createElement('span'); versions.className='rf-versions'; versions.textContent = texteVersions;
+        const actionsRf = document.createElement('span'); actionsRf.className = 'rf-actions';
+        const lien = document.createElement('button'); lien.type='button'; lien.className='btn-lien'; lien.textContent='🔗';
+        lien.title = 'Copier le lien direct (utilisable dans une page HTML)';
+        lien.addEventListener('click', ()=>copierLienGist(g, f.filename, lien));
+        actionsRf.appendChild(lien);
+        ajouterBoutonsContenu(actionsRf, f.filename, ()=>structureJsonGist(g.id, f.filename));
+        rowBottom.appendChild(type); rowBottom.appendChild(versions); rowBottom.appendChild(actionsRf);
+        ligne.appendChild(rowTop); ligne.appendChild(rowBottom);
+        corps.insertBefore(ligne, progres);
+      });
+      progres.remove();
+    }catch(err){
+      const txt = (err instanceof TypeError)
+        ? "Impossible de contacter GitHub."
+        : err.message;
+      corps.innerHTML = `<div class="repo-erreur">❌ ${txt}</div>`;
+    }
+  }
+
+  // Charge et affiche, dans `corps`, la liste des fichiers d'un dépôt avec
+  // leur type et leur nombre de versions (interrogé fichier par fichier).
+  async function chargerFichiersDepot(d, corps, compteSpan){
+    corps.innerHTML = '<div class="repo-progres">Chargement…</div>';
+    try{
+      const branche = d.default_branch || 'main';
+      const { tree } = await getArbrePour(d.owner, d.name, branche);
+      const blobs = tree.tree.filter(e=>e.type==='blob').sort((a,b)=>a.path.localeCompare(b.path));
+      compteSpan.textContent = `(${blobs.length})`;
+
+      if(blobs.length === 0){
+        corps.innerHTML = '<div class="repo-erreur" style="color:#86868b;">Dépôt vide.</div>';
+        return;
+      }
+
+      corps.innerHTML = '';
+      const progres = document.createElement('div');
+      progres.className = 'repo-progres';
+      corps.appendChild(progres);
+
+      // Nombre de versions récupéré séquentiellement (avec retour visuel de
+      // progression), pour rester raisonnable sur le nombre de requêtes en
+      // parallèle envoyées à l'API GitHub.
+      for(let i=0; i<blobs.length; i++){
+        const e = blobs[i];
+        progres.textContent = `Analyse des versions… (${i+1}/${blobs.length})`;
+        const ligne = document.createElement('div');
+        ligne.className = 'rf-item';
+        const rowTop = document.createElement('div'); rowTop.className = 'rf-row-top';
+        const nom = creerNomRf(e.path, ()=>voirTexte(e.path, e.sha, d.owner, d.name));
+        rowTop.appendChild(nom);
+        const rowBottom = document.createElement('div'); rowBottom.className = 'rf-row-bottom';
+        const type = creerBadgeRf(e.path, null, ()=>apercu(e.path, e.sha, d.owner, d.name));
+        const versions = document.createElement('span'); versions.className='rf-versions'; versions.textContent = '…';
+        const actionsRf = document.createElement('span'); actionsRf.className = 'rf-actions';
+        ajouterBoutonsContenu(actionsRf, e.path, ()=>structureJson(e.path, e.sha, d.owner, d.name));
+        rowBottom.appendChild(type); rowBottom.appendChild(versions); rowBottom.appendChild(actionsRf);
+        ligne.appendChild(rowTop); ligne.appendChild(rowBottom);
+        corps.insertBefore(ligne, progres);
+
+        const nb = await compterVersions(d.owner, d.name, e.path, branche);
+        versions.textContent = (nb===null) ? '?' : (nb===1 ? '1 version' : `${nb} versions`);
+      }
+      progres.remove();
+    }catch(err){
+      const txt = (err instanceof TypeError)
+        ? "Impossible de contacter GitHub."
+        : err.message;
+      corps.innerHTML = `<div class="repo-erreur">❌ ${txt}</div>`;
+    }
+  }
+
+  // ---------- Combo box de choix du dépôt ----------
+  // Un seul champ : tu tapes le nom à la main, OU tu déroules la liste de tes
+  // dépôts avec le bouton ▼. Choisir une entrée remplit le même champ.
+  let depotsCharges = [];   // [{name, owner, prive, default_branch}] mis en cache après chargement
+
+  // Mémoire persistante par dépôt : branche déjà validée + nombre de fichiers
+  // trouvés lors du dernier listing. Sert à ne plus redemander la branche et à
+  // afficher le compte de fichiers dans la liste déroulante.
+  const CLE_DEPOTS = 'supprime_doublon_depots';
+  function lireInfosDepots(){
+    try { return JSON.parse(localStorage.getItem(CLE_DEPOTS)) || {}; } catch(_){ return {}; }
+  }
+  function infoDepot(owner, name){ return lireInfosDepots()[`${owner}/${name}`] || null; }
+  function ecrireDepotInfo(owner, name, infos){
+    const tout = lireInfosDepots();
+    const cle = `${owner}/${name}`;
+    tout[cle] = Object.assign(tout[cle] || {}, infos);
+    try { localStorage.setItem(CLE_DEPOTS, JSON.stringify(tout)); } catch(_){}
+  }
+
+  // Récupère tes dépôts (le token suffit à t'identifier). Renvoie true si OK.
+  async function chargerDepots(){
+    if(!val('token')){ ouvrirReglages(); message("Saisis d'abord ton token pour charger la liste des dépôts.","error"); return false; }
+    try{
+      const depots = [];
+      // Pagination : on lit page par page jusqu'à en avoir moins qu'une pleine page.
+      for(let page=1; page<=10; page++){
+        const url = `https://api.github.com/user/repos?per_page=100&page=${page}&sort=full_name&_cb=${Date.now()}`;
+        const resp = await fetch(url, { headers: headers(), cache:"no-store" });
+        if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||resp.status); }
+        const lot = await resp.json();
+        depots.push(...lot);
+        if(lot.length < 100) break;
+      }
+      depotsCharges = depots
+        .map(d=>({ name:d.name, owner:d.owner.login, prive:d.private, full:d.full_name, default_branch:d.default_branch }))
+        .sort((a,b)=>a.full.localeCompare(b.full));
+      return true;
+    }catch(err){
+      message("Impossible de charger les dépôts : "+err.message,"error");
+      return false;
+    }
+  }
+
+  const panelDepots = () => document.getElementById('combo-panel');
+  const fermerListe = () => panelDepots().classList.remove('visible');
+
+  // Construit le contenu du menu, éventuellement filtré par ce qui est tapé.
+  function rendreListe(filtre){
+    const panel = panelDepots();
+    panel.innerHTML = '';
+    const rech = document.createElement('div');
+    rech.className = 'combo-recharger'; rech.textContent = '↻ Recharger la liste';
+    rech.addEventListener('click', rechargerListe);
+    panel.appendChild(rech);
+
+    const f = (filtre||'').toLowerCase();
+    const liste = depotsCharges.filter(d => d.name.toLowerCase().includes(f));
+    if(liste.length === 0){
+      const v = document.createElement('div'); v.className='combo-vide';
+      v.textContent = 'Aucun dépôt ne correspond.';
+      panel.appendChild(v);
+      return;
+    }
+    liste.forEach(d=>{
+      const o = document.createElement('div');
+      o.className = 'combo-opt';
+      const info = infoDepot(d.owner, d.name);
+      const compte = (info && typeof info.nbFichiers === 'number') ? ` (${info.nbFichiers})` : '';
+      o.textContent = d.name + compte + (d.prive ? ' 🔒' : '');
+      o.addEventListener('click', ()=>choisirDepot(d.name, d.owner));
+      panel.appendChild(o);
+    });
+  }
+
+  // Bouton ▼ : ouvre/ferme le menu (et charge la liste au premier déroulé).
+  async function basculerListe(){
+    const panel = panelDepots();
+    if(panel.classList.contains('visible')){ fermerListe(); return; }
+    if(depotsCharges.length === 0){
+      panel.innerHTML = '<div class="combo-vide">Chargement…</div>';
+      panel.classList.add('visible');
+      const ok = await chargerDepots();
+      if(!ok){ fermerListe(); return; }
+    }
+    rendreListe('');            // au déroulé manuel, on montre TOUT
+    panel.classList.add('visible');
+  }
+
+  // Recharger depuis GitHub (au cas où un dépôt a été créé/supprimé depuis).
+  async function rechargerListe(e){
+    if(e) e.stopPropagation();
+    const panel = panelDepots();
+    panel.innerHTML = '<div class="combo-vide">Rechargement…</div>';
+    const ok = await chargerDepots();
+    if(ok) rendreListe(val('repo')); else fermerListe();
+  }
+
+  // Frappe au clavier : si la liste est déjà chargée, on filtre en direct.
+  function filtrerDepots(){
+    if(depotsCharges.length === 0) return;   // rien chargé -> saisie 100 % manuelle
+    rendreListe(val('repo'));
+    panelDepots().classList.add('visible');
+  }
+
+  function choisirDepot(name, owner){
+    document.getElementById('repo').value = name;
+    // Aligne le propriétaire seulement si besoin (utile pour un dépôt d'organisation).
+    if(owner && owner !== val('user')) document.getElementById('user').value = owner;
+    // Branche déjà validée pour ce dépôt : on la remet pour ne pas la redemander.
+    const info = infoDepot(owner || val('user'), name);
+    if(info && info.branch) document.getElementById('branch').value = info.branch;
+    fermerListe();
+    sauverChamps();
+  }
+
+  // Un clic en dehors de la combo referme le menu.
+  document.addEventListener('click', (e)=>{
+    const combo = document.querySelector('.combo');
+    if(combo && !combo.contains(e.target)) fermerListe();
+  });
+
+  // ---------- Aperçu d'un fichier HTML ----------
+  // Décode le contenu base64 renvoyé par l'API GitHub en respectant l'UTF-8
+  // (indispensable pour les accents français).
+  function decodeBase64Utf8(b64){
+    const binaire = atob(b64.replace(/\s/g,''));
+    const octets = Uint8Array.from(binaire, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(octets);
+  }
+
+  let apercuUrl = null;
+
+  function ouvrirApercu(titre, html){
+    const o=document.getElementById('apercu-overlay');
+    const t=document.getElementById('apercu-titre');
+    const f=document.getElementById('apercu-frame');
+    if(apercuUrl){ URL.revokeObjectURL(apercuUrl); apercuUrl=null; }
+    // On rend le HTML tel quel dans une iframe : scripts, styles et mise en
+    // page s'exécutent comme dans un vrai navigateur (idéal pour tes pages
+    // monofichier autonomes). Les ressources en chemin relatif vers le dépôt
+    // ne seront pas résolues, mais c'est sans effet sur ce type de page.
+    apercuUrl = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+    t.textContent = titre;
+    f.src = apercuUrl;
+    o.classList.add('visible');
+  }
+
+  function fermerApercu(){
+    const o=document.getElementById('apercu-overlay');
+    const f=document.getElementById('apercu-frame');
+    o.classList.remove('visible');
+    f.src='about:blank';
+    if(apercuUrl){ URL.revokeObjectURL(apercuUrl); apercuUrl=null; }
+  }
+  document.getElementById('apercu-close').addEventListener('click', fermerApercu);
+
+  // ---------- Structure d'un fichier JSON ----------
+  function echapper(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function tronquer(s,n){ s=String(s); return s.length>n ? s.slice(0,n)+'…' : s; }
+
+  function typeDe(v){
+    if(v===null) return 'null';
+    if(Array.isArray(v)) return 'array';
+    return typeof v;   // 'object' | 'string' | 'number' | 'boolean'
+  }
+
+  // Type dominant des éléments d'un tableau ('mixte' si plusieurs types).
+  function typesTableau(arr){
+    const ts = new Set(arr.map(typeDe));
+    return ts.size === 1 ? [...ts][0] : 'mixte';
+  }
+
+  // Élément représentatif d'un tableau : pour des objets, on RÉUNIT les clés
+  // rencontrées (certains éléments peuvent avoir des champs optionnels) ;
+  // pour des tableaux, on prend le premier ; sinon le premier élément.
+  function representantTableau(arr){
+    const objets = arr.filter(e=>e && typeof e==='object' && !Array.isArray(e));
+    if(objets.length){
+      const rep = {};
+      objets.forEach(o=>Object.keys(o).forEach(k=>{ if(!(k in rep)) rep[k]=o[k]; }));
+      return rep;
+    }
+    const tab = arr.find(Array.isArray);
+    return tab !== undefined ? tab : arr[0];
+  }
+
+  // Construit récursivement l'arborescence dans `container`.
+  function construireNoeud(cle, valeur, container){
+    const t = typeDe(valeur);
+    const ligne = document.createElement('div');
+    ligne.className = 'json-ligne';
+    let html = (cle !== null) ? `<span class="json-cle">${echapper(cle)}</span> : ` : '';
+
+    if(t === 'object'){
+      const n = Object.keys(valeur).length;
+      html += `<span class="json-type">{ } objet</span> <span class="json-info">(${n} clé${n>1?'s':''})</span>`;
+      ligne.innerHTML = html; container.appendChild(ligne);
+      const enfants = document.createElement('div'); enfants.className='json-enfants';
+      Object.keys(valeur).forEach(k=>construireNoeud(k, valeur[k], enfants));
+      container.appendChild(enfants);
+    }
+    else if(t === 'array'){
+      const n = valeur.length;
+      if(n === 0){
+        html += `<span class="json-type">[ ] tableau vide</span>`;
+        ligne.innerHTML = html; container.appendChild(ligne);
+        return;
+      }
+      const te = typesTableau(valeur);
+      const suffixe = te==='object' ? "d'objets"
+                    : te==='array'  ? 'de tableaux'
+                    : te==='mixte'  ? '(types mixtes)'
+                    : `de ${te}`;
+      html += `<span class="json-type">[ ] tableau</span> <span class="json-info">(${n} élément${n>1?'s':''}) ${suffixe}</span>`;
+      ligne.innerHTML = html; container.appendChild(ligne);
+      // On détaille la forme des éléments seulement s'ils sont structurés.
+      if(te === 'object'){
+        const rep = representantTableau(valeur);
+        const enfants = document.createElement('div'); enfants.className='json-enfants';
+        Object.keys(rep).forEach(k=>construireNoeud(k, rep[k], enfants));
+        container.appendChild(enfants);
+      } else if(te === 'array'){
+        const enfants = document.createElement('div'); enfants.className='json-enfants';
+        construireNoeud(null, representantTableau(valeur), enfants);
+        container.appendChild(enfants);
+      }
+    }
+    else {
+      let ex = '';
+      if(t === 'string') ex = `"${tronquer(valeur,40)}"`;
+      else if(t !== 'null') ex = String(valeur);
+      html += `<span class="json-type">${t}</span>` + (ex ? ` <span class="json-valeur">${echapper(ex)}</span>` : '');
+      ligne.innerHTML = html; container.appendChild(ligne);
+    }
+  }
+
+  function ouvrirStructure(titre, donnees){
+    const o=document.getElementById('json-overlay');
+    document.getElementById('json-titre').textContent = titre;
+    const c=document.getElementById('json-content'); c.innerHTML='';
+    construireNoeud(null, donnees, c);
+    o.classList.add('visible');
+  }
+  function fermerStructure(){ document.getElementById('json-overlay').classList.remove('visible'); }
+  document.getElementById('json-close').addEventListener('click', fermerStructure);
+
+  // ---------- Contenu brut d'un fichier texte / code (.txt / .py) ----------
+  function ouvrirTexte(titre, contenu){
+    document.getElementById('texte-titre').textContent = titre;
+    // textContent : le contenu s'affiche tel quel, sans interprétation ni risque d'injection.
+    document.getElementById('texte-content').textContent = contenu;
+    document.getElementById('texte-overlay').classList.add('visible');
+  }
+  function fermerTexte(){ document.getElementById('texte-overlay').classList.remove('visible'); }
+  document.getElementById('texte-close').addEventListener('click', fermerTexte);
+
+  async function voirTexte(pathExact, blobSha, uExplicite, rExplicite){
+    const u = uExplicite || val('user'), r = rExplicite || val('repo');
+    if(!uExplicite && !verifier()) return;
+    message(`Chargement de « ${pathExact} »…`,"success");
+    try{
+      const resp = await fetch(`https://api.github.com/repos/${u}/${r}/git/blobs/${blobSha}`, { headers: headers() });
+      if(!resp.ok) throw await erreurGitHub(resp, "Lecture du fichier impossible");
+      const blob = await resp.json();
+      const texte = blob.encoding === 'base64' ? decodeBase64Utf8(blob.content) : blob.content;
+      ouvrirTexte(pathExact, texte);
+      message(`Contenu de « ${pathExact} » affiché.`,"success");
+    }catch(err){
+      message("Lecture impossible : "+err.message,"error");
+    }
+  }
+
+  async function structureJson(pathExact, blobSha, uExplicite, rExplicite){
+    const u = uExplicite || val('user'), r = rExplicite || val('repo');
+    if(!uExplicite && !verifier()) return;
+    message(`Analyse de « ${pathExact} »…`,"success");
+    try{
+      const resp = await fetch(`https://api.github.com/repos/${u}/${r}/git/blobs/${blobSha}`, { headers: headers() });
+      if(!resp.ok) throw await erreurGitHub(resp, "Lecture du fichier impossible");
+      const blob = await resp.json();
+      const texte = blob.encoding === 'base64' ? decodeBase64Utf8(blob.content) : blob.content;
+      let donnees;
+      try { donnees = JSON.parse(texte); }
+      catch(e){ throw new Error("le contenu n'est pas un JSON valide (" + e.message + ")"); }
+      ouvrirStructure(pathExact, donnees);
+      message(`Structure de « ${pathExact} » affichée.`,"success");
+    }catch(err){
+      message("Analyse impossible : "+err.message,"error");
+    }
+  }
+
+  async function apercu(pathExact, blobSha, uExplicite, rExplicite){
+    const u = uExplicite || val('user'), r = rExplicite || val('repo');
+    if(!uExplicite && !verifier()) return;
+    message(`Chargement de l'aperçu de « ${pathExact} »…`,"success");
+    try{
+      // On lit le blob par son SHA (objet immuable) : contenu en base64.
+      const resp = await fetch(`https://api.github.com/repos/${u}/${r}/git/blobs/${blobSha}`, { headers: headers() });
+      if(!resp.ok) throw await erreurGitHub(resp, "Lecture du fichier impossible");
+      const blob = await resp.json();
+      const html = blob.encoding === 'base64' ? decodeBase64Utf8(blob.content) : blob.content;
+      ouvrirApercu(pathExact, html);
+      message(`Aperçu de « ${pathExact} » ouvert.`,"success");
+    }catch(err){
+      message("Aperçu impossible : "+err.message,"error");
+    }
+  }
+
+  // Équivalent pour un fichier HTML de gist.
+  async function apercuGist(gistId, filename){
+    message(`Chargement de l'aperçu de « ${filename} »…`,"success");
+    try{
+      const html = await contenuFichierGist(gistId, filename);
+      ouvrirApercu(filename, html);
+      message(`Aperçu de « ${filename} » ouvert.`,"success");
+    }catch(err){
+      message("Aperçu impossible : "+err.message,"error");
+    }
+  }
+
+  // ---- Équivalents « voir le contenu » / « structure » pour un fichier de gist ----
+  // Un gist n'a pas de blob adressable par SHA comme un dépôt : on relit le
+  // gist en entier (l'API renvoie le contenu de chaque fichier), avec un
+  // repli sur raw_url si le contenu est tronqué par l'API (fichier volumineux).
+  async function contenuFichierGist(gistId, filename){
+    const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers: headers() });
+    if(!resp.ok) throw await erreurGitHub(resp, "Lecture du gist impossible");
+    const data = await resp.json();
+    const f = data.files && data.files[filename];
+    if(!f) throw new Error("fichier introuvable dans ce gist (renommé ou supprimé depuis le listing ?)");
+    if(!f.truncated) return f.content || '';
+    const rawResp = await fetch(f.raw_url);
+    if(!rawResp.ok) throw new Error("fichier trop volumineux pour être affiché entièrement");
+    return await rawResp.text();
+  }
+
+  async function voirTexteGist(gistId, filename){
+    message(`Chargement de « ${filename} »…`,"success");
+    try{
+      const texte = await contenuFichierGist(gistId, filename);
+      ouvrirTexte(filename, texte);
+      message(`Contenu de « ${filename} » affiché.`,"success");
+    }catch(err){
+      message("Lecture impossible : "+err.message,"error");
+    }
+  }
+
+  async function structureJsonGist(gistId, filename){
+    message(`Analyse de « ${filename} »…`,"success");
+    try{
+      const texte = await contenuFichierGist(gistId, filename);
+      let donnees;
+      try { donnees = JSON.parse(texte); }
+      catch(e){ throw new Error("le contenu n'est pas un JSON valide (" + e.message + ")"); }
+      ouvrirStructure(filename, donnees);
+      message(`Structure de « ${filename} » affichée.`,"success");
+    }catch(err){
+      message("Analyse impossible : "+err.message,"error");
+    }
+  }
+
+  // Supprime un fichier au chemin EXACT en reconstruisant l'arbre sans lui.
+  async function supprimer(pathExact, blobSha){
+    if(!verifier()) return;
+    const ok = await confirmer(
+      `Supprimer définitivement « ${pathExact} » ?\n\n`+
+      "Un commit sera créé. L'historique Git garde toujours une trace, "+
+      "mais le fichier disparaîtra de la branche."
+    );
+    if(!ok) return;
+
+    try{
+      const u=val('user'), r=val('repo'), br=val('branch');
+      let derniereErreur = null;
+
+      // On tente jusqu'à 4 fois : si la branche a bougé entre notre lecture et
+      // notre écriture (déploiement en parallèle, lecture en cache, etc.),
+      // GitHub répond "not a fast forward". Plutôt que d'échouer, on RELIT la
+      // pointe fraîche et on refait le commit dessus.
+      for(let tentative=1; tentative<=4; tentative++){
+        message(tentative===1
+          ? `Suppression de « ${pathExact} »…`
+          : `La branche avait bougé — nouvelle tentative (${tentative}/4)…`, "success");
+
+        // 1) pointe + arbre FRAIS (getArbre lit sans cache)
+        const { headSha, tree } = await getArbre();
+
+        // 2) le fichier existe-t-il toujours, à ce chemin EXACT ?
+        const cible = tree.tree.find(e=>e.type==='blob' && e.path===pathExact);
+        if(!cible){
+          message(`« ${pathExact} » n'existe plus à ce chemin exact — il est peut-être déjà supprimé. Je recharge la liste.`,"success");
+          lister();
+          return;
+        }
+
+        // 3) nouvel arbre = tous les blobs SAUF celui-ci (reconstruit de zéro)
+        const nouvelArbre = tree.tree
+          .filter(e=>e.type==='blob' && e.path!==pathExact)
+          .map(e=>({ path:e.path, mode:e.mode, type:'blob', sha:e.sha }));
+
+        const treeResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/trees`, {
+          method:"POST", headers: headers(),
+          body: JSON.stringify({ tree: nouvelArbre })
+        });
+        if(!treeResp.ok){ const e=await treeResp.json().catch(()=>({})); throw new Error(`Création de l'arbre : ${e.message||treeResp.status}`); }
+        const newTree = await treeResp.json();
+
+        // 4) commit basé sur la pointe FRAÎCHE
+        const commitResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/commits`, {
+          method:"POST", headers: headers(),
+          body: JSON.stringify({ message:`Suppression du doublon ${pathExact}`, tree:newTree.sha, parents:[headSha] })
+        });
+        if(!commitResp.ok){ const e=await commitResp.json().catch(()=>({})); throw new Error(`Création du commit : ${e.message||commitResp.status}`); }
+        const newCommit = await commitResp.json();
+
+        // 5) on avance la branche
+        const patchResp = await fetch(`https://api.github.com/repos/${u}/${r}/git/refs/heads/${br}`, {
+          method:"PATCH", headers: headers(),
+          body: JSON.stringify({ sha:newCommit.sha, force:false })
+        });
+
+        if(patchResp.ok){
+          message(`✅ « ${pathExact} » supprimé (commit ${newCommit.sha.substring(0,7)}).`,"success");
+          lister();
+          return;
+        }
+
+        const e = await patchResp.json().catch(()=>({}));
+        derniereErreur = e.message || String(patchResp.status);
+
+        // "not a fast forward" = la branche a bougé : on réessaie avec une pointe fraîche.
+        if(patchResp.status===422 && /fast[\s-]?forward/i.test(derniereErreur)){
+          continue;
+        }
+        // Toute autre erreur : inutile d'insister.
+        throw new Error(`Mise à jour de la branche : ${derniereErreur}`);
+      }
+
+      throw new Error(`La branche n'arrête pas de bouger (${derniereErreur}). Attends quelques secondes qu'un éventuel déploiement se termine, puis réessaie.`);
+    }catch(err){
+      message("Échec de la suppression : "+err.message,"error");
+    }
+  }
+
+  // ---------- Mémorisation des champs (localStorage) ----------
+  // On enregistre ce qui est saisi au fil de la frappe, et on le recharge à
+  // l'ouverture : plus besoin de tout retaper à chaque tentative.
+  const CHAMPS = ['user','token','repo','branch'];
+  const CLE_STOCKAGE = 'supprime_doublon_config';
+
+  function sauverChamps(){
+    const data = {};
+    CHAMPS.forEach(id => { data[id] = document.getElementById(id).value; });
+    try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(data)); } catch(_){}
+  }
+
+  function chargerChamps(){
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(CLE_STOCKAGE)) || {}; } catch(_){}
+    CHAMPS.forEach(id => {
+      if (data[id] !== undefined && data[id] !== '') {
+        document.getElementById(id).value = data[id];
+      }
+    });
+  }
+
+  function oublierChamps(){
+    try { localStorage.removeItem(CLE_STOCKAGE); } catch(_){}
+    CHAMPS.forEach(id => { document.getElementById(id).value = (id === 'branch' ? 'main' : ''); });
+    message("Identifiants mémorisés effacés de cet appareil.","success");
+  }
+
+  // Au démarrage : on restaure les valeurs, puis on enregistre à chaque frappe.
+  chargerChamps();
+  CHAMPS.forEach(id => document.getElementById(id).addEventListener('input', sauverChamps));
 </script>
 </body>
 </html>
