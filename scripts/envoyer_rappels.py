@@ -81,18 +81,18 @@ def construire_message(evenements_matches, demain):
     return sujet, corps
 
 
-def envoyer_email(destinataire, sujet, corps):
+def envoyer_email(destinataires, sujet, corps):
     expediteur = os.environ["GMAIL_USER"]
     mot_de_passe = os.environ["GMAIL_APP_PASSWORD"]
 
     msg = MIMEText(corps, "plain", "utf-8")
     msg["Subject"] = sujet
     msg["From"] = expediteur
-    msg["To"] = destinataire
+    msg["To"] = ", ".join(destinataires)
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as serveur:
         serveur.login(expediteur, mot_de_passe)
-        serveur.sendmail(expediteur, [destinataire], msg.as_string())
+        serveur.sendmail(expediteur, destinataires, msg.as_string())
 
 
 def caracteres_suspects(s):
@@ -198,16 +198,29 @@ def diagnostiquer_gmail():
               "(4) le compte est un compte Google Workspace dont l'administrateur bloque l'accès SMTP.")
 
 
+def lire_destinataires(donnees):
+    """Lit la liste de destinataires, avec repli sur l'ancien format à une seule adresse
+    (clé "destinataire") pour rester compatible avec un fichier JSON pas encore migré."""
+    liste = donnees.get("destinataires")
+    if liste:
+        return [d.strip() for d in liste if d and d.strip()]
+    ancien = donnees.get("destinataire")
+    if ancien:
+        return [ancien.strip()]
+    secours = os.environ.get("DESTINATAIRE_SECOURS", "")
+    return [secours] if secours else []
+
+
 def main():
     if os.environ.get("DIAGNOSTIQUER_GMAIL", "false").strip().lower() == "true":
         diagnostiquer_gmail()
         return
 
     donnees = charger_donnees()
-    destinataire = donnees.get("destinataire") or os.environ.get("DESTINATAIRE_SECOURS", "")
+    destinataires = lire_destinataires(donnees)
     forcer_test = os.environ.get("FORCER_TEST", "false").strip().lower() == "true"
 
-    if not destinataire:
+    if not destinataires:
         print("Aucun destinataire configuré (ni dans le JSON, ni en secours). Abandon.")
         sys.exit(1 if forcer_test else 0)  # un test doit remonter en échec ; le cron quotidien reste silencieux
 
@@ -224,8 +237,8 @@ def main():
                   "(pas un vrai rappel).\nIl emprunte le prochain événement réel du "
                   "calendrier pour vérifier toute la chaîne : lecture du fichier, "
                   "mise en forme, envoi Gmail.\n\n") + corps
-        envoyer_email(destinataire, sujet, corps)
-        print(f"[TEST] E-mail envoyé à {destinataire} (événement emprunté : {evt['nom']}).")
+        envoyer_email(destinataires, sujet, corps)
+        print(f"[TEST] E-mail envoyé à {', '.join(destinataires)} (événement emprunté : {evt['nom']}).")
         return
 
     demain = date.today() + timedelta(days=1)
@@ -235,8 +248,8 @@ def main():
         return
 
     sujet, corps = construire_message(matches, demain)
-    envoyer_email(destinataire, sujet, corps)
-    print(f"E-mail envoyé à {destinataire} pour {len(matches)} événement(s).")
+    envoyer_email(destinataires, sujet, corps)
+    print(f"E-mail envoyé à {', '.join(destinataires)} pour {len(matches)} événement(s).")
 
 
 if __name__ == "__main__":
