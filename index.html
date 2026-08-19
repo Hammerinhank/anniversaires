@@ -50,6 +50,10 @@
   .boutons-evt{display:flex;gap:4px;}
   .boutons-evt button{padding:6px 8px;font-size:12px;}
   .vide{color:var(--att);font-size:13px;text-align:center;padding:20px;}
+  .ligne-destinataire{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--bordure);}
+  .ligne-destinataire:last-child{border-bottom:none;}
+  .ligne-destinataire span{flex:1;font-size:13px;word-break:break-all;}
+  .ligne-destinataire button{padding:4px 8px;font-size:12px;}
   #panneau-historique{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;padding:20px;}
   #panneau-historique .carte-hist{background:var(--carte);border:1px solid var(--bordure);border-radius:12px;max-width:480px;margin:40px auto;max-height:75vh;overflow-y:auto;padding:16px;}
   #panneau-historique h3{margin-top:0;}
@@ -60,15 +64,19 @@
 </head>
 <body>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V10</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V12</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
   <summary>⚙️ Réglages</summary>
 
   <div class="champ">
-    <label>Adresse e-mail de destination des rappels</label>
-    <input type="email" id="champ-email" placeholder="toi@exemple.com">
+    <label>Adresses e-mail de destination des rappels</label>
+    <div id="liste-destinataires" style="max-height:160px;overflow-y:auto;border:1px solid var(--bordure);border-radius:8px;padding:4px;margin-bottom:8px;background:var(--carte2);"></div>
+    <div class="ligne">
+      <input type="email" id="champ-nouvel-email" placeholder="ajouter@exemple.com">
+      <button class="secondaire" id="btn-ajouter-email" style="flex:0 0 auto;">➕</button>
+    </div>
   </div>
 
   <div class="section-titre" style="margin-top:16px;">Synchronisation GitHub</div>
@@ -163,7 +171,7 @@
 </div>
 
 <script>
-const VERSION = "V10";
+const VERSION = "V12";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
@@ -174,17 +182,22 @@ const HISTORIQUE = [
   { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite." },
   { v: "V8", note: "Chargement avec 3 CDN de secours essayés successivement." },
   { v: "V9", note: "Correctif racine : chargement remplacé par un import() de module ES prêt à l'emploi (jsdelivr +esm, puis esm.sh en secours)." },
-  { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne (respectée aussi côté envoi réel et test), et bascule Chronologique/Alphabétique pour la section « Tous les événements »." }
+  { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne, et bascule Chronologique/Alphabétique pour « Tous les événements »." },
+  { v: "V11", note: "Le champ e-mail accepte plusieurs adresses séparées par une virgule (destinataires multiples), stockées en tableau JSON." },
+  { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
 const CLE_CONFIG = "anniversaires_config";
-const CLE_EMAIL = "anniversaires_email";
+const CLE_EMAIL = "anniversaires_email"; // ancien format (chaîne), conservé en lecture pour migration
+const CLE_DESTINATAIRES = "anniversaires_destinataires";
 const CLE_GMAIL = "anniversaires_gmail";
 
 const NOMS_MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 let evenements = [];
+let destinataires = [];
+let indexEditionEmail = null; // index en cours d'édition dans la liste des destinataires, ou null
 let triTousMode = localStorage.getItem("anniversaires_tri_tous") || "chrono"; // "chrono" | "alpha"
 
 // ---------- Persistance locale ----------
@@ -204,7 +217,16 @@ function chargerLocal(){
     document.getElementById("champ-token").value = config.token || "";
   }catch(e){}
 
-  document.getElementById("champ-email").value = localStorage.getItem(CLE_EMAIL) || "";
+  try{
+    const brutDest = localStorage.getItem(CLE_DESTINATAIRES);
+    if (brutDest){
+      destinataires = JSON.parse(brutDest);
+    } else {
+      const ancien = localStorage.getItem(CLE_EMAIL) || "";
+      destinataires = ancien ? ancien.split(/[,;]/).map(s => s.trim()).filter(s => s) : [];
+    }
+  }catch(e){ destinataires = []; }
+  renderListeDestinataires();
 
   try{
     const gmail = JSON.parse(localStorage.getItem(CLE_GMAIL) || "{}");
@@ -220,12 +242,79 @@ function sauverGmailLocal(){
   }));
 }
 
-function sauverEvenementsLocal(){
-  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+function sauverDestinatairesLocal(){
+  localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
 }
 
-function sauverEmailLocal(){
-  localStorage.setItem(CLE_EMAIL, document.getElementById("champ-email").value.trim());
+function renderListeDestinataires(){
+  const conteneur = document.getElementById("liste-destinataires");
+  conteneur.innerHTML = "";
+  if (destinataires.length === 0){
+    conteneur.innerHTML = '<div class="vide" style="padding:10px;">Aucun destinataire</div>';
+    return;
+  }
+  destinataires.forEach((email, i) => {
+    const ligne = document.createElement("div");
+    ligne.className = "ligne-destinataire";
+    ligne.innerHTML = `
+      <span>${escHtml(email)}</span>
+      <button class="secondaire" data-action="editer-email" data-index="${i}">✏️</button>
+      <button class="danger" data-action="supprimer-email" data-index="${i}">🗑️</button>
+    `;
+    conteneur.appendChild(ligne);
+  });
+}
+
+document.getElementById("btn-ajouter-email").addEventListener("click", () => {
+  const champ = document.getElementById("champ-nouvel-email");
+  const valeur = champ.value.trim();
+  if (!valeur || !valeur.includes("@")){
+    afficherMsg("msg-sync", "Adresse e-mail invalide.", "err");
+    return;
+  }
+  if (indexEditionEmail !== null){
+    destinataires[indexEditionEmail] = valeur;
+    indexEditionEmail = null;
+    document.getElementById("btn-ajouter-email").textContent = "➕";
+  } else {
+    if (destinataires.includes(valeur)){
+      afficherMsg("msg-sync", "Cette adresse est déjà dans la liste.", "err");
+      return;
+    }
+    destinataires.push(valeur);
+  }
+  champ.value = "";
+  sauverDestinatairesLocal();
+  renderListeDestinataires();
+});
+
+document.getElementById("liste-destinataires").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const index = parseInt(btn.dataset.index, 10);
+
+  if (btn.dataset.action === "supprimer-email"){
+    if (!confirm(`Supprimer « ${destinataires[index]} » de la liste ?`)) return;
+    destinataires.splice(index, 1);
+    if (indexEditionEmail === index){
+      indexEditionEmail = null;
+      document.getElementById("champ-nouvel-email").value = "";
+      document.getElementById("btn-ajouter-email").textContent = "➕";
+    }
+    sauverDestinatairesLocal();
+    renderListeDestinataires();
+  }
+
+  if (btn.dataset.action === "editer-email"){
+    document.getElementById("champ-nouvel-email").value = destinataires[index];
+    indexEditionEmail = index;
+    document.getElementById("btn-ajouter-email").textContent = "✓";
+    document.getElementById("champ-nouvel-email").focus();
+  }
+});
+
+function sauverEvenementsLocal(){
+  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
 }
 
 // ---------- Rendu ----------
@@ -434,7 +523,6 @@ document.getElementById("btn-tri-alpha").addEventListener("click", () => {
   rafraichir();
 });
 
-document.getElementById("champ-email").addEventListener("change", sauverEmailLocal);
 document.getElementById("champ-gmail-user").addEventListener("change", sauverGmailLocal);
 document.getElementById("champ-gmail-app-password").addEventListener("change", sauverGmailLocal);
 
@@ -452,7 +540,6 @@ document.getElementById("btn-enregistrer-config").addEventListener("click", () =
     return;
   }
   localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
-  sauverEmailLocal();
   afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
 });
 
@@ -509,7 +596,7 @@ document.getElementById("btn-push").addEventListener("click", async () => {
     }catch(e){ /* fichier inexistant : création */ }
 
     const payload = {
-      destinataire: document.getElementById("champ-email").value.trim(),
+      destinataires,
       maj: new Date().toISOString(),
       evenements
     };
@@ -547,9 +634,11 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
     const data = await githubApi(url);
     const contenu = JSON.parse(b64DecodeUtf8(data.content));
     evenements = contenu.evenements || [];
-    if (contenu.destinataire) document.getElementById("champ-email").value = contenu.destinataire;
+    if (contenu.destinataires && contenu.destinataires.length) destinataires = contenu.destinataires;
+    else if (contenu.destinataire) destinataires = [contenu.destinataire];
     sauverEvenementsLocal();
-    sauverEmailLocal();
+    sauverDestinatairesLocal();
+    renderListeDestinataires();
     rafraichir();
     afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
   }catch(e){
@@ -789,8 +878,11 @@ async function importerDonneesInitiales(){
     if (!rep.ok) return;
     const data = await rep.json();
     evenements = data.evenements || [];
-    if (data.destinataire) document.getElementById("champ-email").value = data.destinataire;
+    if (data.destinataires && data.destinataires.length) destinataires = data.destinataires;
+    else if (data.destinataire) destinataires = [data.destinataire];
     sauverEvenementsLocal();
+    sauverDestinatairesLocal();
+    renderListeDestinataires();
   }catch(e){ /* pas de fichier local co-hébergé : pas grave, liste vide */ }
 }
 
