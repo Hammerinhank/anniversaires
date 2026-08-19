@@ -3,7 +3,7 @@
     "henri.tavernier@gmail.com",
     "sophie.tavernier@gmail.com"
   ],
-  "maj": "2026-08-19T05:58:14.412Z",
+  "maj": "2026-08-19T15:54:37.340Z",
   "evenements": [
     {
       "id": "e01",
@@ -139,7 +139,9 @@
       "jour": 17,
       "mois": 5,
       "annee": 1930,
-      "type": "Anniversaire"
+      "type": "Anniversaire",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e18",
