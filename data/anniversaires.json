@@ -3,7 +3,7 @@
     "henri.tavernier@gmail.com",
     "sophie.tavernier@gmail.com"
   ],
-  "maj": "2026-08-19T05:47:47.649Z",
+  "maj": "2026-08-19T05:58:14.412Z",
   "evenements": [
     {
       "id": "e01",
@@ -191,11 +191,13 @@
     },
     {
       "id": "e24",
-      "nom": "Jean",
+      "nom": "Jean T",
       "jour": 24,
       "mois": 6,
       "annee": null,
-      "type": "Fête"
+      "type": "Fête",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e25",
@@ -291,7 +293,9 @@
       "jour": 15,
       "mois": 8,
       "annee": null,
-      "type": "Fête"
+      "type": "Fête",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e37",
@@ -307,7 +311,9 @@
       "jour": 20,
       "mois": 8,
       "annee": null,
-      "type": "Fête"
+      "type": "Fête",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e39",
@@ -363,7 +369,9 @@
       "jour": 10,
       "mois": 10,
       "annee": 2024,
-      "type": "Anniversaire"
+      "type": "Anniversaire",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e46",
@@ -379,7 +387,9 @@
       "jour": 24,
       "mois": 10,
       "annee": 1928,
-      "type": "Anniversaire"
+      "type": "Anniversaire",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e48",
@@ -475,7 +485,9 @@
       "jour": 30,
       "mois": 12,
       "annee": 1924,
-      "type": "Anniversaire"
+      "type": "Anniversaire",
+      "incertain": false,
+      "noMail": true
     },
     {
       "id": "e60",
