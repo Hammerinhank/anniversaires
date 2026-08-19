@@ -1,6 +1,9 @@
 {
-  "destinataire": "henri.tavernier@gmail.com",
-  "maj": "2026-08-18T05:21:06.289Z",
+  "destinataires": [
+    "henri.tavernier@gmail.com",
+    "sophie.tavernier@gmail.com"
+  ],
+  "maj": "2026-08-19T05:47:47.649Z",
   "evenements": [
     {
       "id": "e01",
