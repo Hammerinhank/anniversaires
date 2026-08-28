@@ -15,6 +15,12 @@
   h1{font-size:20px;margin:0 0 4px;}
   .sous-titre{color:var(--att);font-size:13px;margin-bottom:14px;}
   .badge-version{display:inline-block;background:var(--carte2);border:1px solid var(--bordure);color:var(--vert);font-weight:700;font-size:13px;padding:3px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;cursor:pointer;}
+  .etat-sync{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;background:var(--carte2);border:1px solid var(--bordure);color:var(--att);white-space:nowrap;}
+  .etat-sync.ok{color:var(--vert);border-color:#1e4a2c;}
+  .etat-sync.erreur{color:#ff8a80;border-color:#5a2323;}
+  .etat-sync.en-cours{color:var(--orange);border-color:#5a3a10;}
+  .etat-sync.en-attente{color:var(--orange);border-color:#5a3a10;}
+  .etat-sync.aucune-config{color:var(--att);}
   details{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;margin-bottom:12px;padding:0 12px;}
   details summary{padding:10px 0;font-weight:600;cursor:pointer;font-size:14px;}
   details[open] summary{border-bottom:1px solid var(--bordure);margin-bottom:10px;}
@@ -50,6 +56,10 @@
   .boutons-evt{display:flex;gap:4px;}
   .boutons-evt button{padding:6px 8px;font-size:12px;}
   .vide{color:var(--att);font-size:13px;text-align:center;padding:20px;}
+  .ligne-destinataire{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--bordure);}
+  .ligne-destinataire:last-child{border-bottom:none;}
+  .ligne-destinataire span{flex:1;font-size:13px;word-break:break-all;}
+  .ligne-destinataire button{padding:4px 8px;font-size:12px;}
   #panneau-historique{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;padding:20px;}
   #panneau-historique .carte-hist{background:var(--carte);border:1px solid var(--bordure);border-radius:12px;max-width:480px;margin:40px auto;max-height:75vh;overflow-y:auto;padding:16px;}
   #panneau-historique h3{margin-top:0;}
@@ -59,20 +69,24 @@
 </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/browsers/sodium.js"></script>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V6</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V13</span><span class="etat-sync" id="etat-sync" title="État de la synchronisation GitHub">☁️</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
   <summary>⚙️ Réglages</summary>
 
   <div class="champ">
-    <label>Adresse e-mail de destination des rappels</label>
-    <input type="email" id="champ-email" placeholder="toi@exemple.com">
+    <label>Adresses e-mail de destination des rappels</label>
+    <div id="liste-destinataires" style="max-height:160px;overflow-y:auto;border:1px solid var(--bordure);border-radius:8px;padding:4px;margin-bottom:8px;background:var(--carte2);"></div>
+    <div class="ligne">
+      <input type="email" id="champ-nouvel-email" placeholder="ajouter@exemple.com">
+      <button class="secondaire" id="btn-ajouter-email" style="flex:0 0 auto;">➕</button>
+    </div>
   </div>
 
   <div class="section-titre" style="margin-top:16px;">Synchronisation GitHub</div>
+  <div class="msg info" style="display:block;">Les événements et les destinataires sont poussés automatiquement vers GitHub après chaque modification, et récupérés automatiquement au démarrage si les identifiants ci-dessous sont enregistrés. Les boutons restent disponibles pour forcer une synchronisation manuelle. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement dans ce navigateur et ne sont jamais écrits dans le fichier JSON partagé.</div>
   <div class="champ"><label>Propriétaire (owner)</label><input type="text" id="champ-owner" placeholder="ex. Hammerinhank"></div>
   <div class="champ"><label>Dépôt (repo)</label><input type="text" id="champ-repo" placeholder="ex. anniversaires"></div>
   <div class="champ"><label>Branche</label><input type="text" id="champ-branche" value="main"></div>
@@ -129,6 +143,12 @@
     <label>Type</label>
     <select id="champ-type"><option value="Anniversaire">Anniversaire</option><option value="Fête">Fête</option></select>
   </div>
+  <div class="champ">
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--texte);">
+      <input type="checkbox" id="champ-no-mail" style="width:auto;">
+      🔕 Ne pas envoyer de rappel par e-mail pour cette personne
+    </label>
+  </div>
   <button id="btn-ajouter">Ajouter</button>
   <input type="hidden" id="champ-id-edition">
   <div class="msg" id="msg-ajout"></div>
@@ -140,7 +160,13 @@
 <div class="section-titre">Dates incomplètes — à compléter</div>
 <div id="liste-incompletes"></div>
 
-<div class="section-titre">Tous les événements (<span id="compteur-total">0</span>)</div>
+<div class="section-titre" style="display:flex;align-items:center;justify-content:space-between;">
+  <span>Tous les événements (<span id="compteur-total">0</span>)</span>
+  <span style="display:flex;gap:4px;">
+    <button class="secondaire" id="btn-tri-chrono" style="padding:4px 10px;font-size:11px;">📅 Chrono</button>
+    <button class="secondaire" id="btn-tri-alpha" style="padding:4px 10px;font-size:11px;">🔤 Alpha</button>
+  </span>
+</div>
 <div id="liste-tous"></div>
 
 <div id="panneau-historique">
@@ -152,24 +178,66 @@
 </div>
 
 <script>
-const VERSION = "V6";
+const VERSION = "V13";
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
   { v: "V3", note: "Champs Gmail (adresse + mot de passe d'application) persistants en local, avec bouton pour chiffrer et pousser directement les secrets GMAIL_USER / GMAIL_APP_PASSWORD sur GitHub." },
   { v: "V4", note: "Bouton « Diagnostiquer Gmail » : détecte espaces/caractères invisibles dans les secrets et teste plusieurs variantes de connexion SMTP, sans jamais envoyer de mail ni exposer le secret en clair." },
   { v: "V5", note: "Le mot de passe d'application Gmail s'affiche désormais en clair (police à chasse fixe) plutôt que masqué, autocorrection/autocapitalisation désactivées sur ce champ." },
-  { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." }
+  { v: "V6", note: "Les messages d'erreur/info ne disparaissent plus automatiquement (seuls les succès s'effacent après 6 s) — le temps de les lire et de les copier." },
+  { v: "V7", note: "Correctif : la librairie de chiffrement (sodium) est désormais chargée à la demande avec attente réelle et message d'erreur explicite." },
+  { v: "V8", note: "Chargement avec 3 CDN de secours essayés successivement." },
+  { v: "V9", note: "Correctif racine : chargement remplacé par un import() de module ES prêt à l'emploi (jsdelivr +esm, puis esm.sh en secours)." },
+  { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne, et bascule Chronologique/Alphabétique pour « Tous les événements »." },
+  { v: "V11", note: "Le champ e-mail accepte plusieurs adresses séparées par une virgule (destinataires multiples), stockées en tableau JSON." },
+  { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." },
+  { v: "V13", note: "Persistance automatique sur GitHub : chaque ajout/modification/suppression d'événement ou de destinataire est poussé automatiquement (regroupé si les changements se suivent rapidement), et les données sont récupérées automatiquement au démarrage si les identifiants GitHub sont enregistrés. Indicateur d'état de synchronisation ajouté à côté du titre. Les boutons manuels « Envoyer / Récupérer » restent disponibles. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement locaux et ne sont jamais écrits dans le fichier JSON partagé." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
 const CLE_CONFIG = "anniversaires_config";
-const CLE_EMAIL = "anniversaires_email";
+const CLE_EMAIL = "anniversaires_email"; // ancien format (chaîne), conservé en lecture pour migration
+const CLE_DESTINATAIRES = "anniversaires_destinataires";
 const CLE_GMAIL = "anniversaires_gmail";
 
 const NOMS_MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 let evenements = [];
+let destinataires = [];
+let indexEditionEmail = null; // index en cours d'édition dans la liste des destinataires, ou null
+let triTousMode = localStorage.getItem("anniversaires_tri_tous") || "chrono"; // "chrono" | "alpha"
+
+// ---------- Synchronisation automatique vers GitHub ----------
+let minuteurSync = null;
+let synchronisationEnCours = false;
+let synchronisationEnAttente = false;
+
+function majEtatSync(etat){
+  const el = document.getElementById("etat-sync");
+  if (!el) return;
+  el.classList.remove("ok","erreur","en-cours","en-attente","aucune-config");
+  const libelles = {
+    "ok": "☁️ Synchronisé",
+    "erreur": "⚠️ Sync échouée",
+    "en-cours": "⏳ Synchronisation…",
+    "en-attente": "⏳ En attente…",
+    "aucune-config": "☁️ Local uniquement"
+  };
+  el.textContent = libelles[etat] || "☁️";
+  el.classList.add(etat);
+}
+
+function programmerSynchronisation(){
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    majEtatSync("aucune-config");
+    return;
+  }
+  majEtatSync("en-attente");
+  clearTimeout(minuteurSync);
+  minuteurSync = setTimeout(() => { pousserVersGitHub(true); }, 1500);
+}
 
 // ---------- Persistance locale ----------
 function chargerLocal(){
@@ -188,7 +256,16 @@ function chargerLocal(){
     document.getElementById("champ-token").value = config.token || "";
   }catch(e){}
 
-  document.getElementById("champ-email").value = localStorage.getItem(CLE_EMAIL) || "";
+  try{
+    const brutDest = localStorage.getItem(CLE_DESTINATAIRES);
+    if (brutDest){
+      destinataires = JSON.parse(brutDest);
+    } else {
+      const ancien = localStorage.getItem(CLE_EMAIL) || "";
+      destinataires = ancien ? ancien.split(/[,;]/).map(s => s.trim()).filter(s => s) : [];
+    }
+  }catch(e){ destinataires = []; }
+  renderListeDestinataires();
 
   try{
     const gmail = JSON.parse(localStorage.getItem(CLE_GMAIL) || "{}");
@@ -204,12 +281,81 @@ function sauverGmailLocal(){
   }));
 }
 
-function sauverEvenementsLocal(){
-  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+function sauverDestinatairesLocal(){
+  localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
+  programmerSynchronisation();
 }
 
-function sauverEmailLocal(){
-  localStorage.setItem(CLE_EMAIL, document.getElementById("champ-email").value.trim());
+function renderListeDestinataires(){
+  const conteneur = document.getElementById("liste-destinataires");
+  conteneur.innerHTML = "";
+  if (destinataires.length === 0){
+    conteneur.innerHTML = '<div class="vide" style="padding:10px;">Aucun destinataire</div>';
+    return;
+  }
+  destinataires.forEach((email, i) => {
+    const ligne = document.createElement("div");
+    ligne.className = "ligne-destinataire";
+    ligne.innerHTML = `
+      <span>${escHtml(email)}</span>
+      <button class="secondaire" data-action="editer-email" data-index="${i}">✏️</button>
+      <button class="danger" data-action="supprimer-email" data-index="${i}">🗑️</button>
+    `;
+    conteneur.appendChild(ligne);
+  });
+}
+
+document.getElementById("btn-ajouter-email").addEventListener("click", () => {
+  const champ = document.getElementById("champ-nouvel-email");
+  const valeur = champ.value.trim();
+  if (!valeur || !valeur.includes("@")){
+    afficherMsg("msg-sync", "Adresse e-mail invalide.", "err");
+    return;
+  }
+  if (indexEditionEmail !== null){
+    destinataires[indexEditionEmail] = valeur;
+    indexEditionEmail = null;
+    document.getElementById("btn-ajouter-email").textContent = "➕";
+  } else {
+    if (destinataires.includes(valeur)){
+      afficherMsg("msg-sync", "Cette adresse est déjà dans la liste.", "err");
+      return;
+    }
+    destinataires.push(valeur);
+  }
+  champ.value = "";
+  sauverDestinatairesLocal();
+  renderListeDestinataires();
+});
+
+document.getElementById("liste-destinataires").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const index = parseInt(btn.dataset.index, 10);
+
+  if (btn.dataset.action === "supprimer-email"){
+    if (!confirm(`Supprimer « ${destinataires[index]} » de la liste ?`)) return;
+    destinataires.splice(index, 1);
+    if (indexEditionEmail === index){
+      indexEditionEmail = null;
+      document.getElementById("champ-nouvel-email").value = "";
+      document.getElementById("btn-ajouter-email").textContent = "➕";
+    }
+    sauverDestinatairesLocal();
+    renderListeDestinataires();
+  }
+
+  if (btn.dataset.action === "editer-email"){
+    document.getElementById("champ-nouvel-email").value = destinataires[index];
+    indexEditionEmail = index;
+    document.getElementById("btn-ajouter-email").textContent = "✓";
+    document.getElementById("champ-nouvel-email").focus();
+  }
+});
+
+function sauverEvenementsLocal(){
+  localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+  programmerSynchronisation();
 }
 
 // ---------- Rendu ----------
@@ -238,6 +384,7 @@ function libelleAge(evt){
 function carteEvenement(evt, avecJours){
   const div = document.createElement("div");
   div.className = "carte-evt" + (evt.incertain ? " incomplet" : "");
+  if (evt.noMail) div.style.opacity = "0.55";
 
   let detailDate;
   let jours = null;
@@ -249,6 +396,7 @@ function carteEvenement(evt, avecJours){
   }
 
   const pastilleClasse = evt.type === "Fête" ? "fete" : "anniv";
+  const puceNoMail = evt.noMail ? ` <span title="Rappel désactivé">🔕</span>` : "";
 
   let badgeJours = "";
   if (avecJours && jours !== null){
@@ -262,7 +410,7 @@ function carteEvenement(evt, avecJours){
   div.innerHTML = `
     <span class="pastille ${pastilleClasse}"></span>
     <div class="infos-evt">
-      <div class="nom-evt">${escHtml(evt.nom)} <span style="font-weight:400;color:var(--att);font-size:12px;">· ${evt.type}</span></div>
+      <div class="nom-evt">${escHtml(evt.nom)}${puceNoMail} <span style="font-weight:400;color:var(--att);font-size:12px;">· ${evt.type}</span></div>
       <div class="detail-evt">${detailDate}</div>
     </div>
     ${badgeJours}
@@ -305,9 +453,16 @@ function rafraichir(){
   }
 
   conteneurTous.innerHTML = "";
-  const tousTries = [...complets].sort((a,b) => (a.mois - b.mois) || (a.jour - b.jour)).concat(incomplets);
+  let tousTries;
+  if (triTousMode === "alpha"){
+    tousTries = [...evenements].sort((a,b) => a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" }));
+  } else {
+    tousTries = [...complets].sort((a,b) => (a.mois - b.mois) || (a.jour - b.jour)).concat(incomplets);
+  }
   tousTries.forEach(e => conteneurTous.appendChild(carteEvenement(e, false)));
   document.getElementById("compteur-total").textContent = evenements.length;
+  document.getElementById("btn-tri-chrono").style.opacity = triTousMode === "chrono" ? "1" : "0.5";
+  document.getElementById("btn-tri-alpha").style.opacity = triTousMode === "alpha" ? "1" : "0.5";
 }
 
 // ---------- Ajout / édition / suppression ----------
@@ -334,6 +489,7 @@ document.getElementById("btn-ajouter").addEventListener("click", () => {
   const anneeVal = document.getElementById("champ-annee").value;
   const annee = anneeVal ? parseInt(anneeVal, 10) : null;
   const type = document.getElementById("champ-type").value;
+  const noMail = document.getElementById("champ-no-mail").checked;
   const idEdition = document.getElementById("champ-id-edition").value;
 
   if (!nom){
@@ -350,18 +506,20 @@ document.getElementById("btn-ajouter").addEventListener("click", () => {
     if (evt){
       evt.nom = nom; evt.jour = jour; evt.mois = mois; evt.annee = annee; evt.type = type;
       evt.incertain = !jour;
+      evt.noMail = noMail;
     }
     document.getElementById("champ-id-edition").value = "";
     document.getElementById("btn-ajouter").textContent = "Ajouter";
     afficherMsg("msg-ajout", "Événement modifié.", "ok");
   } else {
-    evenements.push({ id: genererId(), nom, jour, mois, annee, type, incertain: !jour });
+    evenements.push({ id: genererId(), nom, jour, mois, annee, type, incertain: !jour, noMail });
     afficherMsg("msg-ajout", "Événement ajouté.", "ok");
   }
 
   document.getElementById("champ-nom").value = "";
   document.getElementById("champ-jour").value = "";
   document.getElementById("champ-annee").value = "";
+  document.getElementById("champ-no-mail").checked = false;
 
   sauverEvenementsLocal();
   rafraichir();
@@ -388,13 +546,24 @@ document.addEventListener("click", (e) => {
     document.getElementById("champ-mois").value = evt.mois;
     document.getElementById("champ-annee").value = evt.annee || "";
     document.getElementById("champ-type").value = evt.type;
+    document.getElementById("champ-no-mail").checked = !!evt.noMail;
     document.getElementById("champ-id-edition").value = evt.id;
     document.getElementById("btn-ajouter").textContent = "Enregistrer la modification";
     window.scrollTo({top: document.getElementById("det-ajout").offsetTop - 10, behavior:"smooth"});
   }
 });
 
-document.getElementById("champ-email").addEventListener("change", sauverEmailLocal);
+document.getElementById("btn-tri-chrono").addEventListener("click", () => {
+  triTousMode = "chrono";
+  localStorage.setItem("anniversaires_tri_tous", triTousMode);
+  rafraichir();
+});
+document.getElementById("btn-tri-alpha").addEventListener("click", () => {
+  triTousMode = "alpha";
+  localStorage.setItem("anniversaires_tri_tous", triTousMode);
+  rafraichir();
+});
+
 document.getElementById("champ-gmail-user").addEventListener("change", sauverGmailLocal);
 document.getElementById("champ-gmail-app-password").addEventListener("change", sauverGmailLocal);
 
@@ -412,8 +581,10 @@ document.getElementById("btn-enregistrer-config").addEventListener("click", () =
     return;
   }
   localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
-  sauverEmailLocal();
   afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
+  majEtatSync("en-attente");
+  // Les identifiants viennent d'être renseignés : on tente une synchro immédiate.
+  pousserVersGitHub(true);
 });
 
 document.getElementById("btn-effacer-config").addEventListener("click", () => {
@@ -423,6 +594,7 @@ document.getElementById("btn-effacer-config").addEventListener("click", () => {
   document.getElementById("champ-repo").value = "";
   document.getElementById("champ-token").value = "";
   afficherMsg("msg-sync", "Identifiants effacés.", "ok");
+  majEtatSync("aucune-config");
 });
 
 function lireConfig(){
@@ -452,14 +624,22 @@ function b64DecodeUtf8(str){
   return decodeURIComponent(escape(atob(str)));
 }
 
-document.getElementById("btn-push").addEventListener("click", async () => {
+// Envoie l'état courant (évènements + destinataires uniquement — jamais le token, la config
+// de dépôt ni les identifiants Gmail) vers GitHub. Appelée automatiquement après chaque
+// modification (via programmerSynchronisation) et par le bouton manuel « Envoyer vers GitHub ».
+async function pousserVersGitHub(silencieux){
   const config = lireConfig();
   if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
-    return;
+    majEtatSync("aucune-config");
+    return false;
   }
-  const btn = document.getElementById("btn-push");
-  btn.disabled = true;
+  if (synchronisationEnCours){
+    synchronisationEnAttente = true;
+    return false;
+  }
+  synchronisationEnCours = true;
+  majEtatSync("en-cours");
+  let succes = false;
   try{
     const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
     let sha = null;
@@ -469,7 +649,7 @@ document.getElementById("btn-push").addEventListener("click", async () => {
     }catch(e){ /* fichier inexistant : création */ }
 
     const payload = {
-      destinataire: document.getElementById("champ-email").value.trim(),
+      destinataires,
       maj: new Date().toISOString(),
       evenements
     };
@@ -485,12 +665,65 @@ document.getElementById("btn-push").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
+    majEtatSync("ok");
+    if (!silencieux) afficherMsg("msg-sync", "Envoyé vers GitHub avec succès.", "ok");
+    succes = true;
   }catch(e){
-    afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
+    majEtatSync("erreur");
+    if (!silencieux) afficherMsg("msg-sync", "Échec de l'envoi : " + e.message, "err");
+    succes = false;
   }finally{
-    btn.disabled = false;
+    synchronisationEnCours = false;
+    if (synchronisationEnAttente){
+      synchronisationEnAttente = false;
+      // D'autres changements sont arrivés pendant l'envoi : on repousse l'état le plus récent.
+      pousserVersGitHub(true);
+    }
   }
+  return succes;
+}
+
+// Récupère évènements + destinataires depuis GitHub et remplace l'état local.
+// Appelée automatiquement au démarrage (silencieuse) si des identifiants sont enregistrés,
+// et par le bouton manuel « Récupérer depuis GitHub ».
+async function tirerDepuisGitHub(silencieux){
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    majEtatSync("aucune-config");
+    return false;
+  }
+  majEtatSync("en-cours");
+  try{
+    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
+    const data = await githubApi(url);
+    const contenu = JSON.parse(b64DecodeUtf8(data.content));
+    evenements = contenu.evenements || [];
+    if (contenu.destinataires && contenu.destinataires.length) destinataires = contenu.destinataires;
+    else if (contenu.destinataire) destinataires = [contenu.destinataire];
+    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
+    renderListeDestinataires();
+    rafraichir();
+    majEtatSync("ok");
+    if (!silencieux) afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
+    return true;
+  }catch(e){
+    majEtatSync("erreur");
+    if (!silencieux) afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
+    return false;
+  }
+}
+
+document.getElementById("btn-push").addEventListener("click", async () => {
+  const config = lireConfig();
+  if (!config.owner || !config.repo || !config.token){
+    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
+    return;
+  }
+  const btn = document.getElementById("btn-push");
+  btn.disabled = true;
+  await pousserVersGitHub(false);
+  btn.disabled = false;
 });
 
 document.getElementById("btn-pull").addEventListener("click", async () => {
@@ -502,26 +735,47 @@ document.getElementById("btn-pull").addEventListener("click", async () => {
   if (!confirm("Remplacer la liste locale par la version de GitHub ?")) return;
   const btn = document.getElementById("btn-pull");
   btn.disabled = true;
-  try{
-    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
-    const data = await githubApi(url);
-    const contenu = JSON.parse(b64DecodeUtf8(data.content));
-    evenements = contenu.evenements || [];
-    if (contenu.destinataire) document.getElementById("champ-email").value = contenu.destinataire;
-    sauverEvenementsLocal();
-    sauverEmailLocal();
-    rafraichir();
-    afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
-  }catch(e){
-    afficherMsg("msg-sync", "Échec de la récupération : " + e.message, "err");
-  }finally{
-    btn.disabled = false;
-  }
+  await tirerDepuisGitHub(false);
+  btn.disabled = false;
 });
 
 // ---------- Mise à jour des secrets GitHub Actions ----------
+let promesseSodium = null;
+
+// Le paquet npm libsodium-wrappers ne fournit plus de script "classique" prêt à charger
+// (dist/browsers/sodium.js a disparu depuis la 0.8.x) : on importe désormais le module ES,
+// via les variantes "prêtes pour navigateur" de ces deux CDN (elles résolvent seules
+// l'import interne "libsodium" que le fichier .mjs brut ne sait pas résoudre seul).
+const SOURCES_SODIUM_ESM = [
+  "https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.8.4/+esm",
+  "https://esm.sh/libsodium-wrappers@0.8.4"
+];
+
+function chargerSodium(){
+  if (promesseSodium) return promesseSodium;
+  promesseSodium = (async () => {
+    const echecs = [];
+    for (const url of SOURCES_SODIUM_ESM){
+      try{
+        const mod = await import(/* webpackIgnore: true */ url);
+        const sodium = mod.default || mod;
+        if (sodium && sodium.ready){
+          await sodium.ready;
+          return sodium;
+        }
+        echecs.push(`${new URL(url).hostname} : module chargé mais incomplet`);
+      }catch(e){
+        echecs.push(`${new URL(url).hostname} : ${e.message}`);
+      }
+    }
+    promesseSodium = null; // pour permettre une nouvelle tentative au clic suivant
+    throw new Error("Impossible de charger la librairie de chiffrement (" + echecs.join(" ; ") + ").");
+  })();
+  return promesseSodium;
+}
+
 async function chiffrerPourGitHub(cleGitHubBase64, texteClair){
-  await sodium.ready;
+  const sodium = await chargerSodium();
   const cleBin = sodium.from_base64(cleGitHubBase64, sodium.base64_variants.ORIGINAL);
   const secretBin = sodium.from_string(texteClair);
   const chiffre = sodium.crypto_box_seal(secretBin, cleBin);
@@ -554,14 +808,20 @@ document.getElementById("btn-maj-secrets").addEventListener("click", async () =>
   const btn = document.getElementById("btn-maj-secrets");
   btn.disabled = true;
   sauverGmailLocal();
+  afficherMsg("msg-secrets", "⏳ Chargement de la librairie de chiffrement…", "info");
 
   try{
+    await chargerSodium();
+    afficherMsg("msg-secrets", "⏳ Envoi des secrets chiffrés vers GitHub…", "info");
     const cleInfo = await githubApi(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/secrets/public-key`);
     await poserSecretGitHub(config, "GMAIL_USER", gmailUser, cleInfo);
     await poserSecretGitHub(config, "GMAIL_APP_PASSWORD", gmailPass, cleInfo);
     afficherMsg("msg-secrets", "✅ Secrets GMAIL_USER et GMAIL_APP_PASSWORD mis à jour sur GitHub.", "ok");
   }catch(e){
-    afficherMsg("msg-secrets", "❌ Échec : " + e.message + " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique).", "err");
+    const indice = e.message.includes("chiffrement")
+      ? " Réessaie dans quelques secondes (problème réseau probable)."
+      : " (vérifie que le token a la permission d'écrire les secrets — scope « repo » pour un token classique, ou permission « Secrets » en Read and write pour un token fin).";
+    afficherMsg("msg-secrets", "❌ Échec : " + e.message + indice, "err");
   }finally{
     btn.disabled = false;
   }
@@ -701,7 +961,7 @@ document.getElementById("btn-ferme-historique").addEventListener("click", () => 
   document.getElementById("panneau-historique").style.display = "none";
 });
 
-// ---------- Import initial (si aucune donnée locale) ----------
+// ---------- Import initial (si aucune donnée locale, ni identifiants GitHub) ----------
 async function importerDonneesInitiales(){
   if (evenements.length > 0) return;
   try{
@@ -709,16 +969,29 @@ async function importerDonneesInitiales(){
     if (!rep.ok) return;
     const data = await rep.json();
     evenements = data.evenements || [];
-    if (data.destinataire) document.getElementById("champ-email").value = data.destinataire;
-    sauverEvenementsLocal();
+    if (data.destinataires && data.destinataires.length) destinataires = data.destinataires;
+    else if (data.destinataire) destinataires = [data.destinataire];
+    localStorage.setItem(CLE_EVENEMENTS, JSON.stringify(evenements));
+    localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
+    renderListeDestinataires();
   }catch(e){ /* pas de fichier local co-hébergé : pas grave, liste vide */ }
 }
 
 // ---------- Démarrage ----------
 (async function demarrer(){
   chargerLocal();
-  await importerDonneesInitiales();
   rafraichir();
+
+  const config = lireConfig();
+  if (config.owner && config.repo && config.token){
+    // Des identifiants sont enregistrés : GitHub fait foi, on récupère silencieusement
+    // la dernière version avant d'afficher (en gardant les données locales en secours si ça échoue).
+    await tirerDepuisGitHub(true);
+  } else {
+    majEtatSync("aucune-config");
+    await importerDonneesInitiales();
+    rafraichir();
+  }
 })();
 </script>
 </body>
