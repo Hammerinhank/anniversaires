@@ -21,6 +21,7 @@
   .etat-sync.en-cours{color:var(--orange);border-color:#5a3a10;}
   .etat-sync.en-attente{color:var(--orange);border-color:#5a3a10;}
   .etat-sync.aucune-config{color:var(--att);}
+  .etat-sync.lecture-seule{color:var(--att);}
   details{background:var(--carte);border:1px solid var(--bordure);border-radius:10px;margin-bottom:12px;padding:0 12px;}
   details summary{padding:10px 0;font-weight:600;cursor:pointer;font-size:14px;}
   details[open] summary{border-bottom:1px solid var(--bordure);margin-bottom:10px;}
@@ -70,7 +71,7 @@
 </head>
 <body>
 
-<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V13</span><span class="etat-sync" id="etat-sync" title="État de la synchronisation GitHub">☁️</span></h1>
+<h1>🎂 Anniversaires &amp; Fêtes <span class="badge-version" id="badge-version" title="Voir l'historique des versions">V14</span><span class="etat-sync" id="etat-sync" title="État de la synchronisation GitHub">☁️</span></h1>
 <div class="sous-titre">Rappel automatique par e-mail la veille de chaque événement</div>
 
 <details id="det-config">
@@ -178,7 +179,9 @@
 </div>
 
 <script>
-const VERSION = "V13";
+const VERSION = "V14";
+// Le badge suit toujours VERSION : plus de numéro à mettre à jour à deux endroits.
+{ const bv = document.getElementById("badge-version"); if (bv) bv.textContent = VERSION; }
 const HISTORIQUE = [
   { v: "V1", note: "Création : gestion des événements, rappel la veille par e-mail via GitHub Actions, synchronisation GitHub manuelle." },
   { v: "V2", note: "Bouton « Lancer le test » dans les Réglages : déclenche le workflow réel, sonde son exécution et affiche succès/échec sans manipulation manuelle." },
@@ -192,7 +195,8 @@ const HISTORIQUE = [
   { v: "V10", note: "Case à cocher « 🔕 Ne pas envoyer de rappel » par personne, et bascule Chronologique/Alphabétique pour « Tous les événements »." },
   { v: "V11", note: "Le champ e-mail accepte plusieurs adresses séparées par une virgule (destinataires multiples), stockées en tableau JSON." },
   { v: "V12", note: "Remplacement de la saisie par virgules par une liste scrollable de destinataires avec ajout/modification/suppression individuels ; migration automatique de l'ancien format." },
-  { v: "V13", note: "Persistance automatique sur GitHub : chaque ajout/modification/suppression d'événement ou de destinataire est poussé automatiquement (regroupé si les changements se suivent rapidement), et les données sont récupérées automatiquement au démarrage si les identifiants GitHub sont enregistrés. Indicateur d'état de synchronisation ajouté à côté du titre. Les boutons manuels « Envoyer / Récupérer » restent disponibles. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement locaux et ne sont jamais écrits dans le fichier JSON partagé." }
+  { v: "V13", note: "Persistance automatique sur GitHub : chaque ajout/modification/suppression d'événement ou de destinataire est poussé automatiquement (regroupé si les changements se suivent rapidement), et les données sont récupérées automatiquement au démarrage si les identifiants GitHub sont enregistrés. Indicateur d'état de synchronisation ajouté à côté du titre. Les boutons manuels « Envoyer / Récupérer » restent disponibles. Le token GitHub, la config de dépôt et les identifiants Gmail restent uniquement locaux et ne sont jamais écrits dans le fichier JSON partagé." },
+  { v: "V14", note: "Dépôt pré-rempli (propriétaire Hammerinhank, dépôt anniversaires, branche main), toujours modifiable. La liste se lit sans jeton ; le jeton ne sert plus qu'à enregistrer les modifications, aux secrets Gmail et au test du workflow. Sans jeton, l'état affiche « Lecture seule »." }
 ];
 
 const CLE_EVENEMENTS = "anniversaires_evenements";
@@ -216,13 +220,14 @@ let synchronisationEnAttente = false;
 function majEtatSync(etat){
   const el = document.getElementById("etat-sync");
   if (!el) return;
-  el.classList.remove("ok","erreur","en-cours","en-attente","aucune-config");
+  el.classList.remove("ok","erreur","en-cours","en-attente","aucune-config","lecture-seule");
   const libelles = {
     "ok": "☁️ Synchronisé",
     "erreur": "⚠️ Sync échouée",
     "en-cours": "⏳ Synchronisation…",
     "en-attente": "⏳ En attente…",
-    "aucune-config": "☁️ Local uniquement"
+    "aucune-config": "☁️ Local uniquement",
+    "lecture-seule": "👁 Lecture seule (sans jeton)"
   };
   el.textContent = libelles[etat] || "☁️";
   el.classList.add(etat);
@@ -230,8 +235,8 @@ function majEtatSync(etat){
 
 function programmerSynchronisation(){
   const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
+  if (!config.token){
+    majEtatSync("lecture-seule");
     return;
   }
   majEtatSync("en-attente");
@@ -248,11 +253,11 @@ function chargerLocal(){
 
   const cfg = document.getElementById.bind(document);
   try{
-    const config = JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}");
-    document.getElementById("champ-owner").value = config.owner || "";
-    document.getElementById("champ-repo").value = config.repo || "";
-    document.getElementById("champ-branche").value = config.branche || "main";
-    document.getElementById("champ-fichier").value = config.fichier || "data/anniversaires.json";
+    const config = lireConfig();
+    document.getElementById("champ-owner").value = config.owner;
+    document.getElementById("champ-repo").value = config.repo;
+    document.getElementById("champ-branche").value = config.branche;
+    document.getElementById("champ-fichier").value = config.fichier;
     document.getElementById("champ-token").value = config.token || "";
   }catch(e){}
 
@@ -576,11 +581,16 @@ document.getElementById("btn-enregistrer-config").addEventListener("click", () =
     fichier: document.getElementById("champ-fichier").value.trim() || "data/anniversaires.json",
     token: document.getElementById("champ-token").value.trim()
   };
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Owner, dépôt et token sont requis pour synchroniser.", "err");
+  if (!config.owner || !config.repo){
+    afficherMsg("msg-sync", "Le propriétaire et le dépôt sont requis.", "err");
     return;
   }
   localStorage.setItem(CLE_CONFIG, JSON.stringify(config));
+  if (!config.token){
+    afficherMsg("msg-sync", "Réglages enregistrés. Sans jeton, la liste est lue sur GitHub mais les modifications restent sur cet appareil.", "ok");
+    tirerDepuisGitHub(true);
+    return;
+  }
   afficherMsg("msg-sync", "Réglages enregistrés.", "ok");
   majEtatSync("en-attente");
   // Les identifiants viennent d'être renseignés : on tente une synchro immédiate.
@@ -590,25 +600,37 @@ document.getElementById("btn-enregistrer-config").addEventListener("click", () =
 document.getElementById("btn-effacer-config").addEventListener("click", () => {
   if (!confirm("Effacer les identifiants GitHub enregistrés localement ?")) return;
   localStorage.removeItem(CLE_CONFIG);
-  document.getElementById("champ-owner").value = "";
-  document.getElementById("champ-repo").value = "";
+  document.getElementById("champ-owner").value = DEFAUT_GITHUB.owner;
+  document.getElementById("champ-repo").value = DEFAUT_GITHUB.repo;
+  document.getElementById("champ-branche").value = DEFAUT_GITHUB.branche;
   document.getElementById("champ-token").value = "";
-  afficherMsg("msg-sync", "Identifiants effacés.", "ok");
-  majEtatSync("aucune-config");
+  afficherMsg("msg-sync", "Identifiants effacés : retour au dépôt par défaut, en lecture seule.", "ok");
+  majEtatSync("lecture-seule");
 });
 
+// Dépôt par défaut : lisible par tous sans jeton, le jeton ne servant qu'à écrire.
+const DEFAUT_GITHUB = { owner:"Hammerinhank", repo:"anniversaires", branche:"main", fichier:"data/anniversaires.json" };
+
 function lireConfig(){
-  try{ return JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}"); }
-  catch(e){ return {}; }
+  let c = {};
+  try{ c = JSON.parse(localStorage.getItem(CLE_CONFIG) || "{}") || {}; }catch(e){ c = {}; }
+  return {
+    owner:   c.owner   || DEFAUT_GITHUB.owner,
+    repo:    c.repo    || DEFAUT_GITHUB.repo,
+    branche: c.branche || DEFAUT_GITHUB.branche,
+    fichier: c.fichier || DEFAUT_GITHUB.fichier,
+    token:   c.token   || ""
+  };
 }
 
 async function githubApi(url, options){
   const config = lireConfig();
   const opts = options || {};
   opts.headers = Object.assign({
-    "Authorization": "Bearer " + config.token,
     "Accept": "application/vnd.github+json"
   }, opts.headers || {});
+  // Sans jeton, GitHub accepte les lectures d'un dépôt public : l'en-tête n'est ajouté que si un jeton existe.
+  if (config.token) opts.headers["Authorization"] = "Bearer " + config.token;
   const rep = await fetch(url, opts);
   if (!rep.ok){
     const texte = await rep.text().catch(() => "");
@@ -629,8 +651,9 @@ function b64DecodeUtf8(str){
 // modification (via programmerSynchronisation) et par le bouton manuel « Envoyer vers GitHub ».
 async function pousserVersGitHub(silencieux){
   const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
+  if (!config.token){
+    majEtatSync("lecture-seule");
+    if (!silencieux) afficherMsg("msg-sync", "Un jeton GitHub est nécessaire pour enregistrer les modifications. La lecture, elle, fonctionne sans.", "err");
     return false;
   }
   if (synchronisationEnCours){
@@ -688,10 +711,6 @@ async function pousserVersGitHub(silencieux){
 // et par le bouton manuel « Récupérer depuis GitHub ».
 async function tirerDepuisGitHub(silencieux){
   const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    majEtatSync("aucune-config");
-    return false;
-  }
   majEtatSync("en-cours");
   try{
     const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.fichier}?ref=${config.branche}`;
@@ -704,7 +723,7 @@ async function tirerDepuisGitHub(silencieux){
     localStorage.setItem(CLE_DESTINATAIRES, JSON.stringify(destinataires));
     renderListeDestinataires();
     rafraichir();
-    majEtatSync("ok");
+    majEtatSync(config.token ? "ok" : "lecture-seule");
     if (!silencieux) afficherMsg("msg-sync", "Récupéré depuis GitHub.", "ok");
     return true;
   }catch(e){
@@ -716,8 +735,8 @@ async function tirerDepuisGitHub(silencieux){
 
 document.getElementById("btn-push").addEventListener("click", async () => {
   const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
+  if (!config.token){
+    afficherMsg("msg-sync", "Un jeton GitHub est nécessaire pour envoyer. Colle-le dans les réglages puis enregistre.", "err");
     return;
   }
   const btn = document.getElementById("btn-push");
@@ -727,11 +746,6 @@ document.getElementById("btn-push").addEventListener("click", async () => {
 });
 
 document.getElementById("btn-pull").addEventListener("click", async () => {
-  const config = lireConfig();
-  if (!config.owner || !config.repo || !config.token){
-    afficherMsg("msg-sync", "Renseigne et enregistre d'abord owner/repo/token.", "err");
-    return;
-  }
   if (!confirm("Remplacer la liste locale par la version de GitHub ?")) return;
   const btn = document.getElementById("btn-pull");
   btn.disabled = true;
@@ -983,7 +997,7 @@ async function importerDonneesInitiales(){
   rafraichir();
 
   const config = lireConfig();
-  if (config.owner && config.repo && config.token){
+  if (config.owner && config.repo){
     // Des identifiants sont enregistrés : GitHub fait foi, on récupère silencieusement
     // la dernière version avant d'afficher (en gardant les données locales en secours si ça échoue).
     await tirerDepuisGitHub(true);
