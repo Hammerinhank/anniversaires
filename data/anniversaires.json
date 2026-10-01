@@ -3,7 +3,7 @@
     "henri.tavernier@gmail.com",
     "sophie.tavernier@gmail.com"
   ],
-  "maj": "2026-08-19T15:54:37.340Z",
+  "maj": "2026-10-01T20:08:59.427Z",
   "evenements": [
     {
       "id": "e01",
@@ -517,6 +517,16 @@
       "annee": 2021,
       "type": "Anniversaire",
       "incertain": true
+    },
+    {
+      "id": "emupyw20b3zuq",
+      "nom": "Regis Tavernier",
+      "jour": 23,
+      "mois": 9,
+      "annee": 1950,
+      "type": "Anniversaire",
+      "incertain": false,
+      "noMail": false
     }
   ]
 }
